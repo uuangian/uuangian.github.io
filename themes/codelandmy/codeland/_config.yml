@@ -1,0 +1,31 @@
+# Header
+menu:
+  Home: /
+  Archives: /archives
+  About: /about
+rss: /atom.xml
+
+# Content
+excerpt_link: More
+fancybox: true
+
+# Sidebar
+sidebar: right
+widgets:
+- category
+- recent_posts
+- tagcloud
+- archive
+
+
+# Comments
+# disqus_shortname: wq
+
+# Miscellaneous
+google_analytics: 
+favicon: img/favicon.ico
+twitter: 
+google_plus:
+fb_admins:
+fb_app_id:
+
