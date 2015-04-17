@@ -1,6 +1,6 @@
-title: "Md file demo"
+﻿title: "Md file demo"
 date: 2015-04-03 14:09:40
-tags:
+tags: [demo,test]
 ---
 
 Welcome to StackEdit!
@@ -45,7 +45,7 @@ You can save the current document to a file by clicking <i class="icon-hdd"></i>
 
 > **Tip:** Check out the [<i class="icon-upload"></i> Publish a document](#publish-a-document) section for a description of the different output formats.
 
-
+<!--more-->
 ----------
 
 
@@ -250,6 +250,12 @@ cond(no)->op
 
 > - about **Sequence diagrams** syntax [here][7],
 > - about **Flow charts** syntax [here][8].
+
+Tag Plugins
+
+{% blockquote David Levithan, Wide Awake %}
+Do not just seek happiness for yourself. Seek happiness for all. Through kindness. Through mercy.
+{% endblockquote %}
 
 ### Support StackEdit
 

@@ -49,6 +49,19 @@ tag_map:
 plugins:
 - hexo-math
 
+markdown:
+  render:
+    html: true
+    xhtmlOut: false
+    breaks: false
+    linkify: true
+    typographer: true
+    quotes: '¡°¡±¡®¡¯'
+  plugins:
+    - markdown-it-footnote
+    - markdown-it-sub
+    - markdown-it-sup    
+
 # Date / Time format
 ## Hexo uses Moment.js to parse and display date
 ## You can customize the date format as defined in
