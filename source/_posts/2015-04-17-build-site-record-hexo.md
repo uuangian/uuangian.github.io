@@ -1,6 +1,6 @@
 title: "Windows下建站记录 hexo"
 date: 2015-04-17 09:56:52
-tags:
+tags: [Hexo]
 ---
 
 ## 应用安装
@@ -51,6 +51,7 @@ Hexo的教程网上有许多，收集一些如下
 - [使用hexo搭建博客](http://yangjian.me/workspace/building-blog-with-hexo/)
 - [Hexo-的学习、搭建、整理](http://lszb811.com/2014/07/08/Hexo-%E7%9A%84%E5%AD%A6%E4%B9%A0%E3%80%81%E6%90%AD%E5%BB%BA%E3%80%81%E6%95%B4%E7%90%86/)
 - [hexo系列教程](http://zipperary.com/2013/05/28/hexo-guide-1/)
+- [hexo你的博客](http://ibruce.info/2013/11/22/hexo-your-blog/)
 
 **1. Markdown**
 
@@ -71,6 +72,7 @@ markdown:
     - markdown-it-sup
 ```
 - [markdown 常用语法](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
+
 **2. FontAwesome**
 
 - 简洁的图标型字体库 [<i class="icon-html5"></i>Font-Awesome](http://fortawesome.github.io/Font-Awesome)
