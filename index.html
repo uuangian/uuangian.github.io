@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>UUangian&#39;s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description">
+<meta property="og:type" content="website">
+<meta property="og:title" content="UUangian's">
+<meta property="og:url" content="http://uuangian.github.io/index.html">
+<meta property="og:site_name" content="UUangian's">
+<meta property="og:description">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="UUangian's">
+<meta name="twitter:description">
+  
+    <link rel="alternative" href="/atom.xml" title="UUangian&#39;s" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico">
+  
+
+  <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <div id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <div id="header-title">
+        <h1 id="logo-wrap">
+          <a href="/" id="logo">UUangian&#39;s
+          
+          </a>
+        </h1>
+      </div>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://uuangian.github.io"></form>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-wrapper-jni-guide-4" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/21/wrapper-jni-guide-4/" class="article-date">
+  <time datetime="2015-05-21T00:45:27.000Z" itemprop="datePublished">2015-05-21</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/05/21/wrapper-jni-guide-4/">Wrapper JNI Program Guide 4</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Originally From <a href="http://thebreakfastpost.com/2012/03/06/wrapping-a-c-library-with-jni-part-4/" target="_blank" rel="external">Wrapping a C++ library with JNI Part 4</a></p>
+<h2><strong>Wrapping a C++ library with JNI <br> - part 4</strong></h2>
+<h3>In this series…</h3>
+<ul>
+<li><a href="/2015/05/20/wrapper-jni-guide-0">Introduction</a>, outlining the general steps from starting with a C++ library to being able to build and run simple tests on some JNI wrappers;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-1">Part 1</a>, in which I design some simple Java classes and generate the stub wrapper code;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-2">Part 2</a>, in which I add just enough of the implementation to be able to do a test build;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-3">Part 3</a>, discussing object lifecycles in C++ and Java;</li>
+<li><a href="/2015/05/21/wrapper-jni-guide-4">Part 4</a>, the final episode covering a few remaining points of interest.</li>
+</ul>
+<h3><strong>A More Complex Method</strong></h3>
+<p>The most complex function in our API is the process method in the <code>Plugin</code> class. In C++, this is</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">typedef std::vector&#60;Feature&#62; FeatureList;&#10;typedef std::map&#60;int, FeatureList&#62; FeatureSet;&#10;&#10;virtual FeatureSet process(const float *const *inputBuffers,&#10;                           RealTime timestamp) = 0;</span><br></pre></td></tr></table></figure>
+<p>That is, the process method of a <code>Plugin</code> object takes a two-dimensional array of floats and a <code>RealTime</code> object as arguments, and returns a map from an integer to a <code>FeatureList</code>, which is a sequence of Feature objects stored in a vector. That’s fairly complicated.</p>
+<p>Java lacks typedef or <a href="http://www.ibm.com/developerworks/java/library/j-jtp02216/index.html" target="_blank" rel="external">any very satisfactory alternative</a>. So, we render this as</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public native Map&#60;Integer, ArrayList&#60;Feature&#62;&#62;&#10;    process(float[][] inputBuffers, RealTime timestamp);</span><br></pre></td></tr></table></figure>
+<p>where <code>Feature</code> and <code>RealTime</code> are classes we must provide separately. (It’s good form to declare the return type using an interface such as <code>Map</code> in cases where the caller doesn’t need to care which specific container implementation is used. In this case our concrete return type should probably be a <code>TreeMap</code>.)</p>
+<p>I’m not going to explain every detail of the implementation of this in the JNI wrapper, but I want to illustrate a couple of aspects:</p>
+<h3><strong>Constructing Java objects from JNI code</strong></h3>
+<p>In this particular case, the objects we want to return take rather a lot of work to construct. However, we can illustrate a simple example. At the innermost level, all of our returned objects have type Feature, a Java class we define which has a constructor that needs no arguments.</p>
+<p>To construct one of these, first we need to look up its class:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jclass featClass = env-&#62;FindClass(&#34;org/vamp_plugins/Feature&#34;);</span><br></pre></td></tr></table></figure>
+<p>Then we find the method in the class that corresponds to the constructor. The <code>GetMethodID</code> function is used for looking up all non-static methods, with the method name supplied as the first string argument. For a constructor, the method name is <code>&lt;init&gt;</code>. The final argument gives the <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/types.html#wp16432" target="_blank" rel="external">signature</a> of the method to look up; in this case ()V means a method taking no arguments with a void return type.</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jmethodID ctor = env-&#62;GetMethodID(featClass, &#34;&#60;init&#62;&#34;, &#34;()V&#34;);</span><br></pre></td></tr></table></figure>
+<p>Then, to construct the object we simply call the constructor:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jobject feature = env-&#62;NewObject(featClass, ctor);</span><br></pre></td></tr></table></figure>
+<h3><strong>Handling Generics through JNI</strong></h3>
+<p>This is dead easy. Generic types are there only for the purpose of compiler type-checking: they don’t exist in the virtual machine or in the .class file.
+In terms of Java objects, including from the perspective of any JNI code, our ArrayList<feature> is simply ArrayList.
+So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</code> we intend to return from our function, we only need to do this:</feature></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jclass treeMapClass = env-&#62;FindClass(&#34;java/util/TreeMap&#34;);&#10;jmethodID treeMapCtor = env-&#62;GetMethodID(treeMapClass, &#34;&#60;init&#62;&#34;, &#34;()V&#34;);&#10;jobject map = env-&#62;NewObject(treeMapClass, treeMapCtor);</span><br></pre></td></tr></table></figure>
+<p>Of course we then need to make sure the objects we put in it are of the right type, as the Java compiler is no longer there to help us with type-checking.</p>
+<p>Similarly, if a generic container gets passed to a native function, we can (and must) just ignore the type specialisation when unpacking it.</p>
+<h3><strong>Getting Data from Multi-Dimensional Arrays</strong></h3>
+<p>My process function takes a two-dimensional array of floats as one of its arguments. (This actually represents multi-channel audio sample data.)</p>
+<p>Multi-dimensional arrays in Java are easier to deal with reliably than in C++. An array is an object, so a two-dimensional array is an array of array objects. It appears in the JNI implementation as a <code>jobjectArray</code>:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jobject&#10;Java_org_vamp_1plugins_Plugin_process&#10;    (JNIEnv *env, jobject obj,&#10;     jobjectArray inputBuffers, jobject timestamp);</span><br></pre></td></tr></table></figure>
+<p>JNI provides simple accessor methods for getting at array elements: to pull out an object from an array of objects, we use <code>GetObjectArrayElement</code>. That will enable us to get hold of the second dimension of our arrays.</p>
+<p>Then, to access a sequence of non-object type elements such as our float values all at once, we need to use a symmetrical pair of calls: one to lock the elements in place so the garbage collector can’t get at them, and the other to release them again. To wit, <code>GetFloatArrayElements</code> and <code>ReleaseFloatArrayElements</code>.</p>
+<p>Putting these together to retrieve our two-dimensional float array in C++, we have as the body of our <code>process</code> function:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">int channels = env-&#62;GetArrayLength(data);&#10;float **input = new float *[channels];&#10;&#10;for (int c = 0; c &#60; channels; ++c) &#123;&#10;    jfloatArray cdata =&#10;        (jfloatArray)env-&#62;GetObjectArrayElement(data, c);&#10;    input[c] = env-&#62;GetFloatArrayElements(cdata, 0);&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>Then we do something with the C array that is now stored in <code>input</code>, hang on to the output for a moment, and tidy up:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">for (int c = 0; c &#60; channels; ++c) &#123;&#10;    jfloatArray cdata =&#10;        (jfloatArray)env-&#62;GetObjectArrayElement(data, c);&#10;    env-&#62;ReleaseFloatArrayElements(cdata, input[c], 0);&#10;&#125;&#10;&#10;delete[] input;</span><br></pre></td></tr></table></figure>
+<p>and we’re done. It remains only to construct and return our rather complex return value based on whatever we calculated with the input array earlier.</p>
+<h3><strong>That’s all</strong></h3>
+<p>That’s all for this series—thanks for reading, and I hope it’s been useful.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/21/wrapper-jni-guide-4/" data-id="ci9xtpthu000ak4roej92gani" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-markdown-using-tips" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/20/markdown-using-tips/" class="article-date">
+  <time datetime="2015-05-20T06:16:05.000Z" itemprop="datePublished">2015-05-20</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/05/20/markdown-using-tips/">Markdown 使用技巧</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3>1. <strong>标题换行</strong></h3>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># Title &#60;br/&#62; byline</span><br></pre></td></tr></table></figure>
+<h3>Links</h3>
+<p><a href="https://bitbucket.org/tutorials/markdowndemo" target="_blank" rel="external">markdowndemo</a></p>
+<p><a href="http://hexo.io/docs/tag-plugins.html" target="_blank" rel="external">hexo tag plugins</a></p>
+<p><a href="https://github.com/adam-p/markdown-here/wiki/Markdown-Here-Cheatsheet" target="_blank" rel="external">Markdown-Here-Cheatsheet</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/20/markdown-using-tips/" data-id="ci9xtptj6000rk4roite1xllr" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-wrapper-jni-guide-3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/20/wrapper-jni-guide-3/" class="article-date">
+  <time datetime="2015-05-20T06:00:08.000Z" itemprop="datePublished">2015-05-20</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/05/20/wrapper-jni-guide-3/">Wrapper JNI Program Guide 3</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Originally From <a href="http://thebreakfastpost.com/2012/02/09/wrapping-a-c-library-with-jni-part-3/" target="_blank" rel="external">Wrapping a C++ library with JNI Part 3</a></p>
+<h2><strong>Wrapping a C++ library with JNI <br> - part 3</strong></h2>
+<h3>In this series…</h3>
+<ul>
+<li><a href="/2015/05/20/wrapper-jni-guide-0">Introduction</a>, outlining the general steps from starting with a C++ library to being able to build and run simple tests on some JNI wrappers;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-1">Part 1</a>, in which I design some simple Java classes and generate the stub wrapper code;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-2">Part 2</a>, in which I add just enough of the implementation to be able to do a test build;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-3">Part 3</a>, discussing object lifecycles in C++ and Java;</li>
+<li><a href="/2015/05/21/wrapper-jni-guide-4">Part 4</a>, the final episode covering a few remaining points of interest.</li>
+</ul>
+<p>My <a href="/2015/05/20/wrapper-jni-guide-2">previous post on this topic</a> ended with a very simple test program built and run successfully, wrapping a small subset of the C++ library I was referring to.</p>
+<p>That’s all I want to go through step-by-step, but there are still a couple more things to explain. The first one is…</p>
+<h3><strong>Disposing of C++ objects</strong></h3>
+<p>Java objects are garbage-collected: you don’t have to delete them when you’ve finished with them.</p>
+<p>C++ objects are not. Unless they’re locally scoped objects allocated on the stack (i.e. created without a call to new), you have to delete them explicitly when you’ve finished with them, or else you’re creating a resource leak.</p>
+<p>The wrapper code I’ve been describing uses Java objects that “own” their corresponding C++ objects. My Plugin object for example contains an opaque nativeObject handle which, on the C++ side, gets interpreted as a pointer to the C++ object that provides the plugin implementation. This object belongs to the Java Plugin wrapper, and it should have a corresponding lifetime which we need to manage. Nothing else is going to delete it if we forget to.</p>
+<p>This means we need the Java object to delete its C++ object when it is itself deleted. But a Java object isn’t deleted explicitly, and it has no C+±style destructor function we could make this happen from.</p>
+<p>We have two options:</p>
+<ol>
+<li>Add a method to the Java class that deletes the C++ object, and insist that users of our library remember to call it;</li>
+<li>Delete the C++ object from the Java class’s finalize method, which is called by the JVM when the Java object is garbage collected.</li>
+</ol>
+<p>The second option, using finalize, is attractive because it reduces the burden on our users. Deleting the object would be automatic. If we take the first option, any method we add to delete our object will be one that isn’t required for most Java classes, and that also doesn’t exist in the same form in the C++ library we’re wrapping—so developers coming from either Java or C++ will quite likely overlook it.</p>
+<p>But there are several problems with using finalize for this.</p>
+<p>One problem is that, because the JVM only controls memory and resources within the Java heap, it can’t take into account any resources allocated in the native layer when determining which Java objects it needs to garbage-collect: our Java objects will seem smaller than they effectively are. So it might not finalize our objects quickly enough to prevent memory pressure.</p>
+<p>A second problem is that we can’t guarantee which thread the finalize method will be called from. It’s quite important that our C++ object is deleted from the same thread that allocated it.</p>
+<p>Finally, it’s possible that the C++ library we are wrapping might expect objects to be deleted in some particular order relative to one another, and we can’t enforce that if we leave the garbage collector to do it. When in C++, we should do as C++ programmers do.</p>
+<p>And that means we need to get the user of our library to tell us when to delete objects: we must at least take our option 1. That is, we add a method called <code>dispose</code> to the Java class: when it’s called, it deletes the underlying native object. But, of course, our user—the programmer writing to our library—must remember to call it.</p>
+<p>(Why “dispose”? Well, it’s a good name, and it’s the name used by some other libraries that rely on native code, such as <a href="http://www.eclipse.org/swt/" target="_blank" rel="external">the SWT widget toolkit</a>.)</p>
+<p>In our Plugin class, the <code>dispose</code> call would be simply</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public native void dispose();</span><br></pre></td></tr></table></figure>
+<p>and the implementation in Plugin.cpp, using the native handle helper method referred to in my earlier post, would be along the lines of</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">void&#10;Java_org_vamp_1plugins_Plugin_dispose(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle(env, obj);&#10;    setHandle(env, obj, 0);&#10;    delete p;&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>In principle we could also make the <code>finalize</code> method call <code>dispose</code> in case the user forgets. But that’s probably unwise, as the library’s behaviour could become quite unpredictable in subtle ways if the pattern and order of deallocations depended on whether the user had remembered to dispose an object or had left it to the garbage collector.</p>
+<p>Another possibility might be to test within <code>finalize</code> whether the object has been disposed, and print a warning to <code>System.err</code> if it hadn’t.</p>
+<h3><strong>Coming next</strong></h3>
+<p>In my <a href="/2015/05/20/wrapper-jni-guide-4">next (and final) post</a> on this subject, I’ll give an illustration of a function with rather more complex argument and return types than the ones we’ve seen so far.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-3/" data-id="ci9xtpti1000fk4ro94le6md9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-wrapper-jni-guide-2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/20/wrapper-jni-guide-2/" class="article-date">
+  <time datetime="2015-05-20T05:59:59.000Z" itemprop="datePublished">2015-05-20</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/05/20/wrapper-jni-guide-2/">Wrapper JNI Program Guide 2</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Originally From <a href="http://thebreakfastpost.com/2012/01/26/wrapping-a-c-library-with-jni-part-2/" target="_blank" rel="external">Wrapping a C++ library with JNI Part 2</a></p>
+<h2><strong>Wrapping a C++ library with JNI <br> - part 2</strong></h2>
+<h3>In this series…</h3>
+<ul>
+<li><a href="/2015/05/20/wrapper-jni-guide-0">Introduction</a>, outlining the general steps from starting with a C++ library to being able to build and run simple tests on some JNI wrappers;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-1">Part 1</a>, in which I design some simple Java classes and generate the stub wrapper code;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-2">Part 2</a>, in which I add just enough of the implementation to be able to do a test build;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-3">Part 3</a>, discussing object lifecycles in C++ and Java;</li>
+<li><a href="/2015/05/21/wrapper-jni-guide-4">Part 4</a>, the final episode covering a few remaining points of interest.</li>
+</ul>
+<p>By the end of <a href="/2015/05/20/wrapper-jni-guide-1">my previous post</a>, I had cooked up some simple Java classes corresponding to those parts of the C++ library API that I wanted to wrap up first.</p>
+<p>(That means as little of the API as is necessary to get a simple build and test going: I can add to it after that.)</p>
+<p>Now I need to fill in the JNI function implementations, code up a little test program, build it, and see what ensues.</p>
+<h3><strong>4. Write JNI function bodies</strong></h3>
+<p>This is the point at which we need to start referring quite seriously to the JNI specification and Programmer’s Guide.</p>
+<p>Our task is to write function bodies for the functions whose declarations have been generated by javah. The first thing we’ll need is a way to get and set the native handles we are storing in each Java class, so that we can keep track of the native object that each Java object corresponds to.</p>
+<p>This can go in a common header, <code>handle.h</code>:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#ifndef _HANDLE_H_INCLUDED_&#10;#define _HANDLE_H_INCLUDED_&#10;&#10;jfieldID getHandleField(JNIEnv *env, jobject obj)&#10;&#123;&#10;    jclass c = env-&#62;GetObjectClass(obj);&#10;    // J is the type signature for long:&#10;    return env-&#62;GetFieldID(c, &#34;nativeHandle&#34;, &#34;J&#34;);&#10;&#125;&#10;&#10;template &#60;typename T&#62;&#10;T *getHandle(JNIEnv *env, jobject obj)&#10;&#123;&#10;    jlong handle = env-&#62;GetLongField(obj, getHandleField(env, obj));&#10;    return reinterpret_cast&#60;T *&#62;(handle);&#10;&#125;&#10;&#10;template &#60;typename T&#62;&#10;void setHandle(JNIEnv *env, jobject obj, T *t)&#10;&#123;&#10;    jlong handle = reinterpret_cast&#60;jlong&#62;(t);&#10;    env-&#62;SetLongField(obj, getHandleField(env, obj), handle);&#10;&#125;&#10;&#10;#endif</span><br></pre></td></tr></table></figure>
+<p>For <code>PluginLoader.cpp</code>, we start with the appropriate headers and namespaces:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#include &#34;org_vamp_plugins_PluginLoader.h&#34;&#10;#include &#60;vamp-hostsdk/PluginLoader.h&#62;&#10;#include &#34;handle.h&#34;&#10;&#10;using Vamp::Plugin;&#10;using Vamp::HostExt::PluginLoader;</span><br></pre></td></tr></table></figure>
+<p>Now we need two function implementations. We have the declarations for these already: they were generated by <code>javah</code> in the previous post.</p>
+<p>One, the <code>initialise</code> function called from the Java class constructor, simply creates a native object and stows it in the Java object.</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">void&#10;Java_org_vamp_1plugins_PluginLoader_initialise(JNIEnv *env, jobject obj)&#10;&#123;&#10;    PluginLoader *inst = PluginLoader::getInstance();&#10;    setHandle(env, obj, inst);&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>The other does the real work. Here we grab the previously stowed native object from the handle in the Java object, convert the plugin key argument from its opaque <code>jstring</code> type to a C string, call out to the native <code>loadPlugin</code>, and return the result.</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jlong &#10;Java_org_vamp_1plugins_PluginLoader_loadPluginNative(JNIEnv *env, jobject obj,&#10;                             jstring key, jfloat rate)&#10;&#123;&#10;    PluginLoader *inst = getHandle&#60;PluginLoader&#62;(env, obj);&#10;    const char *kstr = env-&#62;GetStringUTFChars(key, 0);&#10;    Plugin *p = inst-&#62;loadPlugin(kstr, rate);&#10;    env-&#62;ReleaseStringUTFChars(key, kstr);&#10;    return (jlong)p;&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>In contrast, <code>Plugin.cpp</code> is largely a cut-and-paste job:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#include &#34;org_vamp_plugins_Plugin.h&#34;&#10;#include &#60;vamp-hostsdk/Plugin.h&#62;&#10;#include &#34;handle.h&#34;&#10;&#10;using Vamp::Plugin;&#10;using std::string;&#10;&#10;jstring&#10;Java_org_vamp_1plugins_Plugin_getIdentifier(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle&#60;Plugin&#62;(env, obj);&#10;    return env-&#62;NewStringUTF(p-&#62;getIdentifier().c_str());&#10;&#125;&#10;&#10;jstring&#10;Java_org_vamp_1plugins_Plugin_getName(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle&#60;Plugin&#62;(env, obj);&#10;    return env-&#62;NewStringUTF(p-&#62;getName().c_str());&#10;&#125;&#10;&#10;jstring&#10;Java_org_vamp_1plugins_Plugin_getDescription(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle&#60;Plugin&#62;(env, obj);&#10;    return env-&#62;NewStringUTF(p-&#62;getDescription().c_str());&#10;&#125;&#10;&#10;jint&#10;Java_org_vamp_1plugins_Plugin_getPluginVersion(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle&#60;Plugin&#62;(env, obj);&#10;    return p-&#62;getPluginVersion();&#10;&#125;</span><br></pre></td></tr></table></figure>
+<h3><strong>5. Make a test program</strong>*</h3>
+<p>This should be a Java program that refers only to the Java classes I’ve put together. It just needs to load a plugin using the <code>PluginLoader</code> class, and call some test methods on the resulting plugin.</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package org.vamp_plugins;&#10;&#10;public class test&#10;&#123;&#10;    public static void main(String[] args) &#123;&#10;&#10;        // This is the name of a Vamp plugin we know we have installed&#10;        String key = &#34;vamp-example-plugins:percussiononsets&#34;;&#10;&#10;        PluginLoader loader = PluginLoader.getInstance();&#10;&#10;        try &#123;&#10;            Plugin p = loader.loadPlugin(key, 44100);&#10;            System.out.println(&#34;identifier: &#34; + p.getIdentifier());&#10;            System.out.println(&#34;name: &#34; + p.getName());&#10;            System.out.println(&#34;description: &#34; + p.getDescription());&#10;            System.out.println(&#34;version: &#34; + p.getPluginVersion());&#10;        &#125; catch (PluginLoader.LoadFailedException e) &#123;&#10;            System.out.println(&#34;Plugin load failed&#34;);&#10;        &#125;&#10;    &#125;&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>That should be enough.</p>
+<h3><strong>6. Build and test</strong></h3>
+<p>So, we need to compile and link our C++ wrapper implementations into a dynamic library (DLL, or shared object); and we need to build our Java test program.</p>
+<p>How you would do this depends on the platform and development environment you’re using. For the purposes of this post, I’m using Linux and command-line tools.</p>
+<p>So, for the C++ parts I’ll create a small <code>Makefile</code>:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">LIBRARY := libvamp-jni.so&#10;OBJFILES := src/PluginLoader.o src/Plugin.o&#10;INCLUDES := -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux&#10;CXXFLAGS := $(INCLUDES)&#10;&#10;$(LIBRARY): $(OBJFILES)&#10;    $(CXX) -shared -o $@ $^ -lvamp-hostsdk</span><br></pre></td></tr></table></figure>
+<p>Thus:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ make&#10;g++ -I/usr/lib/jvm/java-6-openjdk/include -I/usr/lib/jvm/java-6-openjdk/include/linux   -c -o src/PluginLoader.o src/PluginLoader.cpp&#10;g++ -I/usr/lib/jvm/java-6-openjdk/include -I/usr/lib/jvm/java-6-openjdk/include/linux   -c -o src/Plugin.o src/Plugin.cpp&#10;g++ -shared -o libvamp-jni.so src/PluginLoader.o src/Plugin.o -lvamp-hostsdk&#10;$</span><br></pre></td></tr></table></figure>
+<p>Now build the Java classes and test program, and run it:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ javac org/vamp_plugins/*.java&#10;$ java -classpath . org.vamp_plugins.test&#10;Exception in thread &#34;main&#34; java.lang.UnsatisfiedLinkError: org.vamp_plugins.PluginLoader.initialise()V&#10;    at org.vamp_plugins.PluginLoader.initialise(Native Method)&#10;    at org.vamp_plugins.PluginLoader.&#60;init&#62;(PluginLoader.java:23)&#10;    at org.vamp_plugins.PluginLoader.getInstance(PluginLoader.java:10)&#10;    at org.vamp_plugins.test.main(test.java:11)&#10;$</span><br></pre></td></tr></table></figure>
+<p>Uh-oh. I forgot to load the JNI wrapper DLL. To make this happen, I need to add a static section to the end of the <code>PluginLoader</code> class:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">static &#123;&#10;        System.loadLibrary(&#34;vamp-jni&#34;);&#10;    &#125;</span><br></pre></td></tr></table></figure>
+<p>The JVM class loader is quite sensitive to the exact name and location of the library file.</p>
+<p>If I supply the name <code>vamp-jni</code> to loadLibrary as above, then on my Linux machine the JVM will expect the library to be called <a href="http://libvamp-jni.so" target="_blank" rel="external">libvamp-jni.so</a> (and not, say, <a href="http://vamp-jni.so" target="_blank" rel="external">vamp-jni.so</a>).</p>
+<p>Other rules apply on other platforms.</p>
+<p>Rebuilding and trying again:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ javac org/vamp_plugins/*.java&#10;$ java -classpath . org.vamp_plugins.test&#10;identifier: percussiononsets&#10;name: Simple Percussion Onset Detector&#10;description: Detect percussive note onsets by identifying broadband energy rises&#10;version: 2&#10;$</span><br></pre></td></tr></table></figure>
+<p>Hurrah!</p>
+<h3><strong>Next</strong></h3>
+<p>In my <a href="/2015/05/20/wrapper-jni-guide-3">next post</a> on this subject, I talk about managing the disposal of our underlying C++ objects to avoid memory leaks.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-2/" data-id="ci9xtpti9000ik4roh1rkmskw" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-wrapper-jni-guide-1" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/20/wrapper-jni-guide-1/" class="article-date">
+  <time datetime="2015-05-20T05:59:53.000Z" itemprop="datePublished">2015-05-20</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/05/20/wrapper-jni-guide-1/">Wrapper JNI Program Guide 1</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Originally From <a href="http://thebreakfastpost.com/2012/01/23/wrapping-a-c-library-with-jni-part-1/" target="_blank" rel="external">Wrapping a C++ library with JNI Part 1 </a></p>
+<h2><strong>Wrapping a C++ library with JNI <br> - part 1</strong></h2>
+<h3>In this series…</h3>
+<ul>
+<li><a href="/2015/05/20/wrapper-jni-guide-0">Introduction</a>, outlining the general steps from starting with a C++ library to being able to build and run simple tests on some JNI wrappers;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-1">Part 1</a>, in which I design some simple Java classes and generate the stub wrapper code;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-2">Part 2</a>, in which I add just enough of the implementation to be able to do a test build;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-3">Part 3</a>, discussing object lifecycles in C++ and Java;</li>
+<li><a href="/2015/05/21/wrapper-jni-guide-4">Part 4</a>, the final episode covering a few remaining points of interest.</li>
+</ul>
+<p>In my introductory post I outlined the steps I’d need to take in order to get a JNI wrapper working for a simple subset of a C++ library. Time to get started.</p>
+<h3><strong>1. Identify the C++ classes and methods</strong></h3>
+<p>The C++ library I’m wrapping is documented <a href="https://code.soundsoftware.ac.uk/embedded/vamp-plugin-sdk/namespaceVamp.html" target="_blank" rel="external">here</a>.</p>
+<p>I’ll initially need to wrap parts of two classes: PluginLoader, in the Vamp::HostExt namespace, and Plugin, in the Vamp namespace.</p>
+<p>PluginLoader is a singleton class which loads and returns an instance of a Vamp plugin on request, given the name (or “key”) of the plugin. It’s essentially an object factory.</p>
+<p>Then Plugin has both methods that return information about the specific plugin that has been loaded, and methods that are called with blocks of audio data in order to do the actual analysis.</p>
+<p>In my first draft, I want to make a singleton Java class to correspond to PluginLoader and implement in it the one method that actually loads the plugin; and I want to make a Plugin class with a couple of the methods that return simple metadata about the plugin.</p>
+<p>The methods that do real work involve some complicated return types, so I’ll leave those until later.</p>
+<p>So the basic library API I’m starting with looks like this, in the existing C++ API:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">class PluginLoader&#10;&#123;&#10;public:&#10;    static PluginLoader *getInstance();&#10;    Plugin *loadPlugin(PluginKey key,&#10;                       float inputSampleRate,&#10;                       int adapterFlags = 0);&#10;    // ... other methods for later&#10;&#125;;&#10;&#10;class PluginBase&#10;&#123;&#10;public:&#10;    virtual std::string getIdentifier() const = 0;&#10;    virtual std::string getName() const = 0;&#10;    virtual std::string getDescription() const = 0;&#10;    virtual int getPluginVersion() const = 0;&#10;    // ... other methods for later&#10;&#125;;</span><br></pre></td></tr></table></figure>
+<p>That’s plenty to be going on with.</p>
+<p>Note that the <code>PluginBase</code> with its pure virtual methods is somewhat like a C++ equivalent of a Java interface; the plugins themselves have a subclass type, namely Plugin.</p>
+<h3><strong>2. Design the Java classes</strong></h3>
+<p>There may be several ways to render a native library into Java classes, even where the native library API is already written as a set of C++ classes.</p>
+<p>In this case, <code>PluginBase</code> is similar to a Java interface, so I could turn it into one, or I could just put everything straight into the <code>Plugin</code> class in the Java version.</p>
+<p>I’ll start with the latter, because it’s simpler. At this stage my only goal is to get something built that I can run and test. I can refactor later.</p>
+<p>So, my first draft of <code>Plugin</code> is:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package org.vamp_plugins;&#10;&#10;public class Plugin&#10;&#123;&#10;    public native String getIdentifier();&#10;    public native String getName();&#10;    public native String getDescription();&#10;    public native int getPluginVersion();&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>The methods are all declared native and left unimplemented in the Java; they’ll be implemented in our C++ JNI wrapper later on.</p>
+<p>Meanwhile I want my <code>PluginLoader</code> to look a bit like this:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package org.vamp_plugins;&#10;&#10;public class PluginLoader&#10;&#123;&#10;    public class LoadFailedException&#10;        extends Exception &#123; &#125;;&#10;    public static synchronized PluginLoader getInstance() &#123;&#10;        // some magic here&#10;    &#125;&#10;    public Plugin loadPlugin(String key, float inputSampleRate)&#10;        throws LoadFailedException &#123;&#10;        // and here&#10;    &#125;&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>The C++ <code>PluginLoader</code> returns a null pointer if it can’t load a plugin. I want to throw an exception instead, and for this reason I haven’t marked loadPlugin as native—instead it will call a native method that returns a null or non-null value, throwing the exception if the returned value is null.</p>
+<p>I’ve made other simplifications too. I happen to know that the PluginKey type referred to in the C++ API is just a typedef for std::string, so I’ve translated it to a Java string type for the moment. I’ve omitted the options argument for now as well.</p>
+<h3>Native object handles</h3>
+<p>I have two Java classes, each instance of which should “manage” a C++ object of a corresponding class from the native library. Every time a method is called on a given Java instance, it should call through to the same instance of the underlying C++ class.</p>
+<p>To make this happen, we need to make the Java object remember which C++ object it is managing.</p>
+<p>For this purpose we’ll have both classes simply contain a “handle” field, which will hold a value that (on the native side of the fence) will be interpreted as a pointer to the C++ object on the heap, and (on the Java side) will be an opaque integer value.</p>
+<p>We just need to make sure the handle is stored in an integer type big enough for a pointer; the Java long type will do.</p>
+<p>Also, we need a way to construct Plugin objects. The PluginLoader will make plugins by calling its native-code implementation, getting back a C++ plugin pointer, and using that to construct our Java Plugin, so our plugin class needs a constructor that works from our opaque handle type.</p>
+<p>Adding these details and filling in our singleton implementation gives us:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public class PluginLoader&#10;&#123;&#10;    public class LoadFailedException&#10;        extends Exception &#123; &#125;;&#10;&#10;    public static synchronized PluginLoader getInstance() &#123;&#10;        if (inst == null) &#123;&#10;            inst = new PluginLoader();&#10;            inst.initialise();&#10;        &#125;&#10;        return inst;&#10;    &#125;&#10;&#10;    public Plugin loadPlugin(String key, float inputSampleRate)&#10;        throws LoadFailedException &#123;&#10;        long handle = loadPluginNative(key, inputSampleRate);&#10;        if (handle != 0) return new Plugin(handle);&#10;        else throw new LoadFailedException();&#10;    &#125;&#10;&#10;    private PluginLoader() &#123; initialise(); &#125;&#10;    private native long loadPluginNative(String key, float inputSampleRate);&#10;    private native void initialise();&#10;    private static PluginLoader inst;&#10;    private long nativeHandle;&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>and</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public class Plugin&#10;&#123;&#10;    private long nativeHandle;&#10;    protected Plugin(long handle) &#123;&#10;        nativeHandle = handle;&#10;    &#125;&#10;&#10;    public native String getIdentifier();&#10;    public native String getName();&#10;    public native String getDescription();&#10;    public native int getPluginVersion();&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>The initialise method in <code>PluginLoader</code> is there to construct a native object and set up its <code>nativeHandle</code> field. <code>Plugin</code> doesn’t need a similar method, because its handle is given to it in the constructor.</p>
+<p><em>Hang on! How does the native object get deleted?</em>  — I give over a later post entirely to discussion of this question, so skip there if you’re interested now.</p>
+<h3><strong>3. Generate JNI function declarations</strong></h3>
+<p>For each of the native methods in our Java classes, we need an implementation in the JNI wrapper code. This will be a function in C or C++, with a name encoding the Java class and method name and an appropriate signature to receive the JNI mappings for the Java argument types, and with C linkage.</p>
+<p>It’s perfectly possible to write these from scratch, but the JDK includes a tool called javah that can help by producing the function prototypes. It requires compiled class files rather than Java files as input:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ javac org/vamp_plugins/*.java&#10;$ javah -jni org.vamp_plugins.Plugin org.vamp_plugins.PluginLoader&#10;$ ls -1&#10;org&#10;org_vamp_plugins_Plugin.h&#10;org_vamp_plugins_PluginLoader.h&#10;sample.h&#10;$</span><br></pre></td></tr></table></figure>
+<p>As you see, javah generates a header file for each Java class; they contain declarations like</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">JNIEXPORT jstring JNICALL&#10;Java_org_vamp_1plugins_Plugin_getIdentifier&#10; (JNIEnv *, jobject);</span><br></pre></td></tr></table></figure>
+<p>The <code>JNIEXPORT</code> and <code>JNICALL</code> macros simply ensure traditional C linkage regardless of the build platform.</p>
+<p>The method’s return type, <code>String</code> in the Java code, has been converted to the opaque JNI type <code>jstring</code>.</p>
+<p>The function name is an encoding of the package, class, and method name. These must appear exactly as generated by javah, as the JVM relies on them to find the implementation code.</p>
+<p>And the two arguments, which are common to all JNI implementation functions, provide the environment object which rolls up the JNI function namespace, and an opaque jobject referring to the this object on which the method was called.</p>
+<p>If we leave these headers untouched and simply include them in our implementation files, then we’ll be able to regenerate them when we extend our Java API without losing any of our work.</p>
+<blockquote>
+<p><em>Administrative note: If you haven’t already, this is a good moment to put the code directory under version control, so as to be able to mess around without fear of losing any working code.</em></p>
+<p><em>I like <a href="http://mercurial.selenic.com/" target="_blank" rel="external">Mercurial</a>, so I would either <code>hg init; hg add org/vamp_plugins/*.java</code> and <code>hg commit</code>, or else run up <a href="http://easyhg.org/" target="_blank" rel="external">EasyMercurial</a> and follow roughly <a href="http://vimeo.com/29779641" target="_blank" rel="external">the explanation in this video.</a></em></p>
+</blockquote>
+<h2><strong>Next</strong></h2>
+<p>In my <a href="/2015/05/20/wrapper-jni-guide-2">next article</a> I talk about writing the JNI wrapper implementations for these functions, and testing them from Java.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-1/" data-id="ci9xtptij000lk4ro5g3hv08p" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+  
+    <nav id="page-nav">
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+    </nav>
+  
+</section>
+        
+          
+            <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget recents">
+      <ul>
+        
+          <li>
+            <a href="/2015/05/21/wrapper-jni-guide-4/">Wrapper JNI Program Guide 4</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/markdown-using-tips/">Markdown 使用技巧</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-3/">Wrapper JNI Program Guide 3</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-2/">Wrapper JNI Program Guide 2</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-1/">Wrapper JNI Program Guide 1</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Hexo/" style="font-size: 15px;">Hexo</a> <a href="/tags/JNI/" style="font-size: 20px;">JNI</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/demo/" style="font-size: 10px;">demo</a> <a href="/tags/test/" style="font-size: 10px;">test</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+          
+        
+      </div>
+      <div id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a></br>
+      &copy; 2015 uuangian<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</div>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+    <a href="/about" class="mobile-nav-link">About</a>
+  
+</nav>
+    
+
+<script src="http://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+  </div>
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>

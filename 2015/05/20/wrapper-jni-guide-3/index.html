@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Wrapper JNI Program Guide 3 | UUangian&#39;s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Originally From Wrapping a C++ library with JNI Part 3
+Wrapping a C++ library with JNI  - part 3
+In this series…
+
+Introduction, outlining the general steps from starting with a C++ library to being ab">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Wrapper JNI Program Guide 3">
+<meta property="og:url" content="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-3/index.html">
+<meta property="og:site_name" content="UUangian's">
+<meta property="og:description" content="Originally From Wrapping a C++ library with JNI Part 3
+Wrapping a C++ library with JNI  - part 3
+In this series…
+
+Introduction, outlining the general steps from starting with a C++ library to being ab">
+<meta property="og:updated_time" content="2015-05-21T01:14:18.148Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Wrapper JNI Program Guide 3">
+<meta name="twitter:description" content="Originally From Wrapping a C++ library with JNI Part 3
+Wrapping a C++ library with JNI  - part 3
+In this series…
+
+Introduction, outlining the general steps from starting with a C++ library to being ab">
+  
+    <link rel="alternative" href="/atom.xml" title="UUangian&#39;s" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico">
+  
+
+  <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <div id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <div id="header-title">
+        <h1 id="logo-wrap">
+          <a href="/" id="logo">UUangian&#39;s
+          
+          </a>
+        </h1>
+      </div>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://uuangian.github.io"></form>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="outer">
+        <section id="main"><article id="post-wrapper-jni-guide-3" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/20/wrapper-jni-guide-3/" class="article-date">
+  <time datetime="2015-05-20T06:00:08.000Z" itemprop="datePublished">2015-05-20</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Wrapper JNI Program Guide 3
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Originally From <a href="http://thebreakfastpost.com/2012/02/09/wrapping-a-c-library-with-jni-part-3/" target="_blank" rel="external">Wrapping a C++ library with JNI Part 3</a></p>
+<h2><strong>Wrapping a C++ library with JNI <br> - part 3</strong></h2>
+<h3>In this series…</h3>
+<ul>
+<li><a href="/2015/05/20/wrapper-jni-guide-0">Introduction</a>, outlining the general steps from starting with a C++ library to being able to build and run simple tests on some JNI wrappers;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-1">Part 1</a>, in which I design some simple Java classes and generate the stub wrapper code;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-2">Part 2</a>, in which I add just enough of the implementation to be able to do a test build;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-3">Part 3</a>, discussing object lifecycles in C++ and Java;</li>
+<li><a href="/2015/05/21/wrapper-jni-guide-4">Part 4</a>, the final episode covering a few remaining points of interest.</li>
+</ul>
+<p>My <a href="/2015/05/20/wrapper-jni-guide-2">previous post on this topic</a> ended with a very simple test program built and run successfully, wrapping a small subset of the C++ library I was referring to.</p>
+<p>That’s all I want to go through step-by-step, but there are still a couple more things to explain. The first one is…</p>
+<h3><strong>Disposing of C++ objects</strong></h3>
+<p>Java objects are garbage-collected: you don’t have to delete them when you’ve finished with them.</p>
+<p>C++ objects are not. Unless they’re locally scoped objects allocated on the stack (i.e. created without a call to new), you have to delete them explicitly when you’ve finished with them, or else you’re creating a resource leak.</p>
+<p>The wrapper code I’ve been describing uses Java objects that “own” their corresponding C++ objects. My Plugin object for example contains an opaque nativeObject handle which, on the C++ side, gets interpreted as a pointer to the C++ object that provides the plugin implementation. This object belongs to the Java Plugin wrapper, and it should have a corresponding lifetime which we need to manage. Nothing else is going to delete it if we forget to.</p>
+<p>This means we need the Java object to delete its C++ object when it is itself deleted. But a Java object isn’t deleted explicitly, and it has no C+±style destructor function we could make this happen from.</p>
+<p>We have two options:</p>
+<ol>
+<li>Add a method to the Java class that deletes the C++ object, and insist that users of our library remember to call it;</li>
+<li>Delete the C++ object from the Java class’s finalize method, which is called by the JVM when the Java object is garbage collected.</li>
+</ol>
+<p>The second option, using finalize, is attractive because it reduces the burden on our users. Deleting the object would be automatic. If we take the first option, any method we add to delete our object will be one that isn’t required for most Java classes, and that also doesn’t exist in the same form in the C++ library we’re wrapping—so developers coming from either Java or C++ will quite likely overlook it.</p>
+<p>But there are several problems with using finalize for this.</p>
+<p>One problem is that, because the JVM only controls memory and resources within the Java heap, it can’t take into account any resources allocated in the native layer when determining which Java objects it needs to garbage-collect: our Java objects will seem smaller than they effectively are. So it might not finalize our objects quickly enough to prevent memory pressure.</p>
+<p>A second problem is that we can’t guarantee which thread the finalize method will be called from. It’s quite important that our C++ object is deleted from the same thread that allocated it.</p>
+<p>Finally, it’s possible that the C++ library we are wrapping might expect objects to be deleted in some particular order relative to one another, and we can’t enforce that if we leave the garbage collector to do it. When in C++, we should do as C++ programmers do.</p>
+<p>And that means we need to get the user of our library to tell us when to delete objects: we must at least take our option 1. That is, we add a method called <code>dispose</code> to the Java class: when it’s called, it deletes the underlying native object. But, of course, our user—the programmer writing to our library—must remember to call it.</p>
+<p>(Why “dispose”? Well, it’s a good name, and it’s the name used by some other libraries that rely on native code, such as <a href="http://www.eclipse.org/swt/" target="_blank" rel="external">the SWT widget toolkit</a>.)</p>
+<p>In our Plugin class, the <code>dispose</code> call would be simply</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public native void dispose();</span><br></pre></td></tr></table></figure>
+<p>and the implementation in Plugin.cpp, using the native handle helper method referred to in my earlier post, would be along the lines of</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">void&#10;Java_org_vamp_1plugins_Plugin_dispose(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle(env, obj);&#10;    setHandle(env, obj, 0);&#10;    delete p;&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>In principle we could also make the <code>finalize</code> method call <code>dispose</code> in case the user forgets. But that’s probably unwise, as the library’s behaviour could become quite unpredictable in subtle ways if the pattern and order of deallocations depended on whether the user had remembered to dispose an object or had left it to the garbage collector.</p>
+<p>Another possibility might be to test within <code>finalize</code> whether the object has been disposed, and print a warning to <code>System.err</code> if it hadn’t.</p>
+<h3><strong>Coming next</strong></h3>
+<p>In my <a href="/2015/05/20/wrapper-jni-guide-4">next (and final) post</a> on this subject, I’ll give an illustration of a function with rather more complex argument and return types than the ones we’ve seen so far.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-3/" data-id="ci9xtpti1000fk4ro94le6md9" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/05/20/markdown-using-tips/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Markdown 使用技巧
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/05/20/wrapper-jni-guide-2/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Wrapper JNI Program Guide 2</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          
+            <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget recents">
+      <ul>
+        
+          <li>
+            <a href="/2015/05/21/wrapper-jni-guide-4/">Wrapper JNI Program Guide 4</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/markdown-using-tips/">Markdown 使用技巧</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-3/">Wrapper JNI Program Guide 3</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-2/">Wrapper JNI Program Guide 2</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-1/">Wrapper JNI Program Guide 1</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Hexo/" style="font-size: 15px;">Hexo</a> <a href="/tags/JNI/" style="font-size: 20px;">JNI</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/demo/" style="font-size: 10px;">demo</a> <a href="/tags/test/" style="font-size: 10px;">test</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+          
+        
+      </div>
+      <div id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a></br>
+      &copy; 2015 uuangian<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</div>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+    <a href="/about" class="mobile-nav-link">About</a>
+  
+</nav>
+    
+
+<script src="http://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+  </div>
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>

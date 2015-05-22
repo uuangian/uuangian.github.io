@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Wrapper JNI Program Guide 4 | UUangian&#39;s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Originally From Wrapping a C++ library with JNI Part 4
+Wrapping a C++ library with JNI  - part 4
+In this series…
+
+Introduction, outlining the general steps from starting with a C++ library to being ab">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Wrapper JNI Program Guide 4">
+<meta property="og:url" content="http://uuangian.github.io/2015/05/21/wrapper-jni-guide-4/index.html">
+<meta property="og:site_name" content="UUangian's">
+<meta property="og:description" content="Originally From Wrapping a C++ library with JNI Part 4
+Wrapping a C++ library with JNI  - part 4
+In this series…
+
+Introduction, outlining the general steps from starting with a C++ library to being ab">
+<meta property="og:updated_time" content="2015-05-21T01:14:18.149Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Wrapper JNI Program Guide 4">
+<meta name="twitter:description" content="Originally From Wrapping a C++ library with JNI Part 4
+Wrapping a C++ library with JNI  - part 4
+In this series…
+
+Introduction, outlining the general steps from starting with a C++ library to being ab">
+  
+    <link rel="alternative" href="/atom.xml" title="UUangian&#39;s" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico">
+  
+
+  <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <div id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <div id="header-title">
+        <h1 id="logo-wrap">
+          <a href="/" id="logo">UUangian&#39;s
+          
+          </a>
+        </h1>
+      </div>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://uuangian.github.io"></form>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="outer">
+        <section id="main"><article id="post-wrapper-jni-guide-4" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/21/wrapper-jni-guide-4/" class="article-date">
+  <time datetime="2015-05-21T00:45:27.000Z" itemprop="datePublished">2015-05-21</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Wrapper JNI Program Guide 4
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Originally From <a href="http://thebreakfastpost.com/2012/03/06/wrapping-a-c-library-with-jni-part-4/" target="_blank" rel="external">Wrapping a C++ library with JNI Part 4</a></p>
+<h2><strong>Wrapping a C++ library with JNI <br> - part 4</strong></h2>
+<h3>In this series…</h3>
+<ul>
+<li><a href="/2015/05/20/wrapper-jni-guide-0">Introduction</a>, outlining the general steps from starting with a C++ library to being able to build and run simple tests on some JNI wrappers;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-1">Part 1</a>, in which I design some simple Java classes and generate the stub wrapper code;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-2">Part 2</a>, in which I add just enough of the implementation to be able to do a test build;</li>
+<li><a href="/2015/05/20/wrapper-jni-guide-3">Part 3</a>, discussing object lifecycles in C++ and Java;</li>
+<li><a href="/2015/05/21/wrapper-jni-guide-4">Part 4</a>, the final episode covering a few remaining points of interest.</li>
+</ul>
+<h3><strong>A More Complex Method</strong></h3>
+<p>The most complex function in our API is the process method in the <code>Plugin</code> class. In C++, this is</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">typedef std::vector&#60;Feature&#62; FeatureList;&#10;typedef std::map&#60;int, FeatureList&#62; FeatureSet;&#10;&#10;virtual FeatureSet process(const float *const *inputBuffers,&#10;                           RealTime timestamp) = 0;</span><br></pre></td></tr></table></figure>
+<p>That is, the process method of a <code>Plugin</code> object takes a two-dimensional array of floats and a <code>RealTime</code> object as arguments, and returns a map from an integer to a <code>FeatureList</code>, which is a sequence of Feature objects stored in a vector. That’s fairly complicated.</p>
+<p>Java lacks typedef or <a href="http://www.ibm.com/developerworks/java/library/j-jtp02216/index.html" target="_blank" rel="external">any very satisfactory alternative</a>. So, we render this as</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public native Map&#60;Integer, ArrayList&#60;Feature&#62;&#62;&#10;    process(float[][] inputBuffers, RealTime timestamp);</span><br></pre></td></tr></table></figure>
+<p>where <code>Feature</code> and <code>RealTime</code> are classes we must provide separately. (It’s good form to declare the return type using an interface such as <code>Map</code> in cases where the caller doesn’t need to care which specific container implementation is used. In this case our concrete return type should probably be a <code>TreeMap</code>.)</p>
+<p>I’m not going to explain every detail of the implementation of this in the JNI wrapper, but I want to illustrate a couple of aspects:</p>
+<h3><strong>Constructing Java objects from JNI code</strong></h3>
+<p>In this particular case, the objects we want to return take rather a lot of work to construct. However, we can illustrate a simple example. At the innermost level, all of our returned objects have type Feature, a Java class we define which has a constructor that needs no arguments.</p>
+<p>To construct one of these, first we need to look up its class:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jclass featClass = env-&#62;FindClass(&#34;org/vamp_plugins/Feature&#34;);</span><br></pre></td></tr></table></figure>
+<p>Then we find the method in the class that corresponds to the constructor. The <code>GetMethodID</code> function is used for looking up all non-static methods, with the method name supplied as the first string argument. For a constructor, the method name is <code>&lt;init&gt;</code>. The final argument gives the <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/types.html#wp16432" target="_blank" rel="external">signature</a> of the method to look up; in this case ()V means a method taking no arguments with a void return type.</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jmethodID ctor = env-&#62;GetMethodID(featClass, &#34;&#60;init&#62;&#34;, &#34;()V&#34;);</span><br></pre></td></tr></table></figure>
+<p>Then, to construct the object we simply call the constructor:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jobject feature = env-&#62;NewObject(featClass, ctor);</span><br></pre></td></tr></table></figure>
+<h3><strong>Handling Generics through JNI</strong></h3>
+<p>This is dead easy. Generic types are there only for the purpose of compiler type-checking: they don’t exist in the virtual machine or in the .class file.
+In terms of Java objects, including from the perspective of any JNI code, our ArrayList<feature> is simply ArrayList.
+So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</code> we intend to return from our function, we only need to do this:</feature></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jclass treeMapClass = env-&#62;FindClass(&#34;java/util/TreeMap&#34;);&#10;jmethodID treeMapCtor = env-&#62;GetMethodID(treeMapClass, &#34;&#60;init&#62;&#34;, &#34;()V&#34;);&#10;jobject map = env-&#62;NewObject(treeMapClass, treeMapCtor);</span><br></pre></td></tr></table></figure>
+<p>Of course we then need to make sure the objects we put in it are of the right type, as the Java compiler is no longer there to help us with type-checking.</p>
+<p>Similarly, if a generic container gets passed to a native function, we can (and must) just ignore the type specialisation when unpacking it.</p>
+<h3><strong>Getting Data from Multi-Dimensional Arrays</strong></h3>
+<p>My process function takes a two-dimensional array of floats as one of its arguments. (This actually represents multi-channel audio sample data.)</p>
+<p>Multi-dimensional arrays in Java are easier to deal with reliably than in C++. An array is an object, so a two-dimensional array is an array of array objects. It appears in the JNI implementation as a <code>jobjectArray</code>:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jobject&#10;Java_org_vamp_1plugins_Plugin_process&#10;    (JNIEnv *env, jobject obj,&#10;     jobjectArray inputBuffers, jobject timestamp);</span><br></pre></td></tr></table></figure>
+<p>JNI provides simple accessor methods for getting at array elements: to pull out an object from an array of objects, we use <code>GetObjectArrayElement</code>. That will enable us to get hold of the second dimension of our arrays.</p>
+<p>Then, to access a sequence of non-object type elements such as our float values all at once, we need to use a symmetrical pair of calls: one to lock the elements in place so the garbage collector can’t get at them, and the other to release them again. To wit, <code>GetFloatArrayElements</code> and <code>ReleaseFloatArrayElements</code>.</p>
+<p>Putting these together to retrieve our two-dimensional float array in C++, we have as the body of our <code>process</code> function:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">int channels = env-&#62;GetArrayLength(data);&#10;float **input = new float *[channels];&#10;&#10;for (int c = 0; c &#60; channels; ++c) &#123;&#10;    jfloatArray cdata =&#10;        (jfloatArray)env-&#62;GetObjectArrayElement(data, c);&#10;    input[c] = env-&#62;GetFloatArrayElements(cdata, 0);&#10;&#125;</span><br></pre></td></tr></table></figure>
+<p>Then we do something with the C array that is now stored in <code>input</code>, hang on to the output for a moment, and tidy up:</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">for (int c = 0; c &#60; channels; ++c) &#123;&#10;    jfloatArray cdata =&#10;        (jfloatArray)env-&#62;GetObjectArrayElement(data, c);&#10;    env-&#62;ReleaseFloatArrayElements(cdata, input[c], 0);&#10;&#125;&#10;&#10;delete[] input;</span><br></pre></td></tr></table></figure>
+<p>and we’re done. It remains only to construct and return our rather complex return value based on whatever we calculated with the input array earlier.</p>
+<h3><strong>That’s all</strong></h3>
+<p>That’s all for this series—thanks for reading, and I hope it’s been useful.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/21/wrapper-jni-guide-4/" data-id="ci9xtpthu000ak4roej92gani" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2015/05/20/markdown-using-tips/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Markdown 使用技巧</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          
+            <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget recents">
+      <ul>
+        
+          <li>
+            <a href="/2015/05/21/wrapper-jni-guide-4/">Wrapper JNI Program Guide 4</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/markdown-using-tips/">Markdown 使用技巧</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-3/">Wrapper JNI Program Guide 3</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-2/">Wrapper JNI Program Guide 2</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-1/">Wrapper JNI Program Guide 1</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Hexo/" style="font-size: 15px;">Hexo</a> <a href="/tags/JNI/" style="font-size: 20px;">JNI</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/demo/" style="font-size: 10px;">demo</a> <a href="/tags/test/" style="font-size: 10px;">test</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+          
+        
+      </div>
+      <div id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a></br>
+      &copy; 2015 uuangian<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</div>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+    <a href="/about" class="mobile-nav-link">About</a>
+  
+</nav>
+    
+
+<script src="http://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+  </div>
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>
