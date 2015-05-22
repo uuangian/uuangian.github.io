@@ -46,12 +46,6 @@
       <nav id="main-nav">
         <a id="main-nav-toggle" class="nav-icon"></a>
         
-          <a class="main-nav-link" href="/">Home</a>
-        
-          <a class="main-nav-link" href="/archives">Archives</a>
-        
-          <a class="main-nav-link" href="/about">About</a>
-        
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://uuangian.github.io"></form>
@@ -135,7 +129,7 @@ The subsequent post will cover steps 4 to 6, to the point of having a working in
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-0/" data-id="ci9yvlbp9000om0roxy4ebesd" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-0/" data-id="ci9zcetr0000oj0roz5e2j16v" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
@@ -169,10 +163,10 @@ The subsequent post will cover steps 4 to 6, to the point of having a working in
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>Hexo建站参见<a href="http://uuangian.github.io/2015/04/17/build-site-record-hexo/">build-site-record-hexo</a></p>
-<h2>建立远程GitHub连接</h2>
+        <p>Hexo建站参见<a href="/2015/04/17/build-site-record-hexo/">build-site-record-hexo</a></p>
+<h2>1. 建立远程GitHub连接</h2>
 <h3>本地Git客户端</h3>
-<p>在<a href="http://uuangian.github.io/2015/04/17/build-site-record-hexo/">Hexo建站</a>中提到Windows下安装Git客户端msysgit，安装完成后即可使用Git Bash进命令操作</p>
+<p>在<a href="/2015/04/17/build-site-record-hexo/">Hexo建站</a>中提到Windows下安装Git客户端msysgit，安装完成后即可使用Git Bash进命令操作</p>
 <h3>生成新的SSH Key</h3>
 <p>在GitBash中</p>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ssh-keygen -t rsa -C &#34;&#37038;&#20214;&#22320;&#22336;@youremail.com&#34;&#10;Generating public/private rsa key pair.&#10;Enter file in which to save the key (/Users/your_user_directory/.ssh/id_rsa):</span><br></pre></td></tr></table></figure>
@@ -194,11 +188,31 @@ The subsequent post will cover steps 4 to 6, to the point of having a working in
 </li>
 </ul>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Host github.com&#10;User git&#10;Hostname ssh.github.com&#10;PreferredAuthentications publickey&#10;IdentityFile ~/.ssh/id_rsa&#10;Port 443</span><br></pre></td></tr></table></figure>
+<h2>2. Github Pages</h2>
+<h3><strong>个人主页</strong></h3>
+<p>也就是库的名称为yourname.github.io的主页，页面文件应当在master分支下，文件结构可以参考我的主页，也就是应当以HTML文件为主，是没有Markdown文件的。</p>
+<p>主页源码可存储在新分支src下，与master独立</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">git init &#10;git branch  src &#10;git checkout src&#10;&#10; git add .&#10; git commit&#10; git remote add origin https://github.com/yourname/yourname.github.io.git&#10; git push origin src</span><br></pre></td></tr></table></figure>
+<p>node_modules和其他用于hexo发布的文件可以不用上传，添加目录或文件到.gitignore中</p>
+<h3><strong>项目主页</strong></h3>
+<p>也就是库名不是yourname.github.io的主页，页面文件应当在gh-pages分支下，文件结构与个人主页基本一致，同样没有Markdown文件。</p>
+<blockquote>
+<p><em>只有yourname.github.io下master可以发布page</em><br><em>其他项目必须在 gh-pages分支下</em></p>
+</blockquote>
+<p>建立 gh-pages分支，会识别为网页路径
+在_config.yml的deploy下 branch 为gh-pages即可</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">deploy:&#10; type: git&#10; repo: https://github.com/username/repo.git&#10; branch: gh-pages</span><br></pre></td></tr></table></figure>
+<p>master 分支存储hexo源文件</p>
+<p>使用命令<code>git add .</code>，将所有文件提交到缓存区。
+使用命令<code>git commit -m &quot;add all files&quot;</code> ，将这些文件提交到本地仓库。
+使用命令<code>git push origin master</code>，将本地仓库的改动推送到github仓库。</p>
+<p>在 <code>yourname.github.io/repo</code>下访问项目网页，需要配置_config.yml下的路径</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># URL&#10;## If your site is put in a subdirectory, set url as &#39;http://yoursite.com/child&#39; and root as &#39;/child/&#39;&#10;url: http://uuangian.github.io/repo&#10;root: /repo/</span><br></pre></td></tr></table></figure>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/04/20/deploy-on-github/" data-id="ci9yvlbpr000sm0rosh7r2wmt" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/04/20/deploy-on-github/" data-id="ci9zcetrj000sj0robmczqmg7" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hexo/">Hexo</a></li></ul>
@@ -292,7 +306,7 @@ tortoisegit 可选</p>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/04/17/build-site-record-hexo/" data-id="ci9yvlblh0000m0rom86v6s9h" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/04/17/build-site-record-hexo/" data-id="ci9zcetoe0000j0rouqc920b3" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hexo/">Hexo</a></li></ul>
@@ -363,7 +377,7 @@ tortoisegit 可选</p>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/04/03/Md-file-demo/" data-id="ci9yvlbnt0005m0rofgrd3p4c" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/04/03/Md-file-demo/" data-id="ci9zcetq70005j0rok76y3t6y" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/demo/">demo</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/test/">test</a></li></ul>
@@ -415,7 +429,7 @@ tortoisegit 可选</p>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2014/04/03/hello-world/" data-id="ci9yvlbnp0004m0rozzt7ce2i" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2014/04/03/hello-world/" data-id="ci9zcetpv0004j0rooi9lp73f" class="article-share-link">Share</a>
       
       
     </footer>
@@ -496,18 +510,12 @@ tortoisegit 可选</p>
     <div id="footer-info" class="inner">
       <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a></br>
       &copy; 2015 uuangian<br>
-      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme based on <a href="http://xingwu.me/archives/" target="_blank">Codeland</a>
     </div>
   </div>
 </div>
     </div>
     <nav id="mobile-nav">
-  
-    <a href="/" class="mobile-nav-link">Home</a>
-  
-    <a href="/archives" class="mobile-nav-link">Archives</a>
-  
-    <a href="/about" class="mobile-nav-link">About</a>
   
 </nav>
     
