@@ -406,7 +406,10 @@ body {
   content: "\f002";
 }
 #nav-twitter-link:before {
-  content: "\f002";
+  content: "\f099";
+}
+#nav-instagram-link:before {
+  content: "\f16d";
 }
 #search-form-wrap {
   position: absolute;
