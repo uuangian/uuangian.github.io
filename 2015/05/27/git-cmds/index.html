@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   
-  <title>GitHub上部署Hexo网站 | UUangian&#39;s</title>
+  <title>Git 命令 | UUangian&#39;s</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
@@ -54,10 +54,10 @@
   </div>
 </div>
       <div class="outer">
-        <section id="main"><article id="post-deploy-on-github" class="article article-type-post" itemscope itemprop="blogPost">
+        <section id="main"><article id="post-git-cmds" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/2015/04/20/deploy-on-github/" class="article-date">
-  <time datetime="2015-04-20T00:57:24.000Z" itemprop="datePublished">2015-04-20</time>
+    <a href="/2015/05/27/git-cmds/" class="article-date">
+  <time datetime="2015-05-27T03:21:58.000Z" itemprop="datePublished">2015-05-27</time>
 </a>
     
   </div>
@@ -68,7 +68,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      GitHub上部署Hexo网站
+      Git 命令
     </h1>
   
 
@@ -76,59 +76,18 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>Hexo建站参见<a href="/2015/04/17/build-site-record-hexo/">build-site-record-hexo</a></p>
-<h2>1. 建立远程GitHub连接</h2>
-<h3>本地Git客户端</h3>
-<p>在<a href="/2015/04/17/build-site-record-hexo/">Hexo建站</a>中提到Windows下安装Git客户端msysgit，安装完成后即可使用Git Bash进命令操作</p>
-<h3>生成新的SSH Key</h3>
-<p>在GitBash中</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ssh-keygen -t rsa -C &#34;&#37038;&#20214;&#22320;&#22336;@youremail.com&#34;&#10;Generating public/private rsa key pair.&#10;Enter file in which to save the key (/Users/your_user_directory/.ssh/id_rsa):</span><br></pre></td></tr></table></figure>
-<p>在GitHub中添加生成的SSH Key
-参见<a href="https://help.github.com/articles/generating-ssh-keys/#step-4-add-your-ssh-key-to-your-account" target="_blank" rel="external">add-your-ssh-key-to-your-account</a></p>
-<p>最后验证:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ssh -T git@github.com</span><br></pre></td></tr></table></figure>
-<p>详细设置可以参考:
-<a href="https://help.github.com/articles/generating-ssh-keys/" target="_blank" rel="external">GitHub Help - Generating SSH Keys</a></p>
-<p><strong><em>遇到的报错处理</em></strong></p>
-<ul>
-<li>Could not open a connection to your authentication agent 错误, win7 下 使用</li>
-</ul>
- <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">eval $(ssh-agent)</span><br></pre></td></tr></table></figure>
-<ul>
-<li>
-<p>在ssh -vT <a href="mailto:git@github.com" target="_blank" rel="external">git@github.com</a> 报 port 22: Attempt to connect timed out without establishing a connection</p>
-<p>需要 编写config文件在.ssh/目录下</p>
-</li>
-</ul>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Host github.com&#10;User git&#10;Hostname ssh.github.com&#10;PreferredAuthentications publickey&#10;IdentityFile ~/.ssh/id_rsa&#10;Port 443</span><br></pre></td></tr></table></figure>
-<h2>2. Github Pages</h2>
-<h3><strong>个人主页</strong></h3>
-<p>也就是库的名称为yourname.github.io的主页，页面文件应当在master分支下，文件结构可以参考我的主页，也就是应当以HTML文件为主，是没有Markdown文件的。</p>
-<p>主页源码可存储在新分支src下，与master独立</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">git init &#10;git branch  src &#10;git checkout src&#10;&#10; git add .&#10; git commit&#10; git remote add origin https://github.com/yourname/yourname.github.io.git&#10; git push origin src</span><br></pre></td></tr></table></figure>
-<p>node_modules和其他用于hexo发布的文件可以不用上传，添加目录或文件到.gitignore中</p>
-<h3><strong>项目主页</strong></h3>
-<p>也就是库名不是yourname.github.io的主页，页面文件应当在gh-pages分支下，文件结构与个人主页基本一致，同样没有Markdown文件。</p>
-<blockquote>
-<p><em>只有yourname.github.io下master可以发布page</em><br><em>其他项目必须在 gh-pages分支下</em></p>
-</blockquote>
-<p>建立 gh-pages分支，会识别为网页路径
-在_config.yml的deploy下 branch 为gh-pages即可</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">deploy:&#10; type: git&#10; repo: https://github.com/username/repo.git&#10; branch: gh-pages</span><br></pre></td></tr></table></figure>
-<p>master 分支存储hexo源文件</p>
-<p>使用命令<code>git add .</code>，将所有文件提交到缓存区。
-使用命令<code>git commit -m &quot;add all files&quot;</code> ，将这些文件提交到本地仓库。
-使用命令<code>git push origin master</code>，将本地仓库的改动推送到github仓库。</p>
-<p>在 <code>yourname.github.io/repo</code>下访问项目网页，需要配置_config.yml下的路径</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># URL&#10;## If your site is put in a subdirectory, set url as &#39;http://yoursite.com/child&#39; and root as &#39;/child/&#39;&#10;url: http://uuangian.github.io/repo&#10;root: /repo/</span><br></pre></td></tr></table></figure>
+        <h2>1. 删除远程分支</h2>
+<p>如果不再需要某个远程分支了，比如搞定了某个特性并把它合并进了远程的 master 分支（或任何其他存放稳定代码的分支），可以用这个非常无厘头的语法来删除它：git push [远程名] :[分支名]。如果想在服务器上删除 serverfix 分支，运行下面的命令：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ git push origin :serverfix&#10;To git@github.com:schacon/simplegit.git&#10; - [deleted]         serverfix</span><br></pre></td></tr></table></figure>
+<p>服务器上的分支没了。你最好特别留心这一页，因为你一定会用到那个命令，而且你很可能会忘掉它的语法。有种方便记忆这条命令的方法：记住我们不久前见过的 git push [远程名] [本地分支]:[远程分支] 语法，如果省略 [本地分支]，那就等于是在说“在这里提取空白然后把它变成[远程分支]”。</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/04/20/deploy-on-github/" data-id="cia7mpym4000vcsroha2mvpe4" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/27/git-cmds/" data-id="cia7mpyjt000acsrombw8npf0" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hexo/">Hexo</a></li></ul>
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/git/">git</a></li></ul>
 
     </footer>
   </div>
@@ -136,19 +95,10 @@
     
 <nav id="article-nav">
   
-    <a href="/2015/05/20/wrapper-jni-guide-0/" id="article-nav-newer" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Newer</strong>
-      <div class="article-nav-title">
-        
-          Wrapper JNI Program Guide
-        
-      </div>
-    </a>
   
-  
-    <a href="/2015/04/17/build-site-record-hexo/" id="article-nav-older" class="article-nav-link-wrap">
+    <a href="/2015/05/21/wrapper-jni-guide-4/" id="article-nav-older" class="article-nav-link-wrap">
       <strong class="article-nav-caption">Older</strong>
-      <div class="article-nav-title">Windows下建站记录 hexo</div>
+      <div class="article-nav-title">Wrapper JNI Program Guide 4</div>
     </a>
   
 </nav>

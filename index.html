@@ -56,6 +56,48 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-git-cmds" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/27/git-cmds/" class="article-date">
+  <time datetime="2015-05-27T03:21:58.000Z" itemprop="datePublished">2015-05-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/05/27/git-cmds/">Git 命令</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2>1. 删除远程分支</h2>
+<p>如果不再需要某个远程分支了，比如搞定了某个特性并把它合并进了远程的 master 分支（或任何其他存放稳定代码的分支），可以用这个非常无厘头的语法来删除它：git push [远程名] :[分支名]。如果想在服务器上删除 serverfix 分支，运行下面的命令：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ git push origin :serverfix&#10;To git@github.com:schacon/simplegit.git&#10; - [deleted]         serverfix</span><br></pre></td></tr></table></figure>
+<p>服务器上的分支没了。你最好特别留心这一页，因为你一定会用到那个命令，而且你很可能会忘掉它的语法。有种方便记忆这条命令的方法：记住我们不久前见过的 git push [远程名] [本地分支]:[远程分支] 语法，如果省略 [本地分支]，那就等于是在说“在这里提取空白然后把它变成[远程分支]”。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/27/git-cmds/" data-id="cia7mpyjt000acsrombw8npf0" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/git/">git</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-wrapper-jni-guide-4" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2015/05/21/wrapper-jni-guide-4/" class="article-date">
@@ -128,7 +170,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/21/wrapper-jni-guide-4/" data-id="ci9zcetqe000aj0ro737ua8w5" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/21/wrapper-jni-guide-4/" data-id="cia7mpyk7000dcsros7z7tgmb" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
@@ -172,7 +214,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/20/markdown-using-tips/" data-id="ci9zcetrc000rj0ro00p4siy0" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/20/markdown-using-tips/" data-id="cia7mpym0000ucsro88l5pifp" class="article-share-link">Share</a>
       
       
     </footer>
@@ -245,7 +287,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-3/" data-id="ci9zcetqk000fj0rot6w77vgj" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-3/" data-id="cia7mpykh000icsroi41tlayf" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
@@ -333,107 +375,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-2/" data-id="ci9zcetqo000ij0ro7ravy1jn" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-wrapper-jni-guide-1" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2015/05/20/wrapper-jni-guide-1/" class="article-date">
-  <time datetime="2015-05-20T05:59:53.000Z" itemprop="datePublished">2015-05-20</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/05/20/wrapper-jni-guide-1/">Wrapper JNI Program Guide 1</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Originally From <a href="http://thebreakfastpost.com/2012/01/23/wrapping-a-c-library-with-jni-part-1/" target="_blank" rel="external">Wrapping a C++ library with JNI Part 1 </a></p>
-<h2><strong>Wrapping a C++ library with JNI <br> - part 1</strong></h2>
-<h3>In this series…</h3>
-<ul>
-<li><a href="/2015/05/20/wrapper-jni-guide-0">Introduction</a>, outlining the general steps from starting with a C++ library to being able to build and run simple tests on some JNI wrappers;</li>
-<li><a href="/2015/05/20/wrapper-jni-guide-1">Part 1</a>, in which I design some simple Java classes and generate the stub wrapper code;</li>
-<li><a href="/2015/05/20/wrapper-jni-guide-2">Part 2</a>, in which I add just enough of the implementation to be able to do a test build;</li>
-<li><a href="/2015/05/20/wrapper-jni-guide-3">Part 3</a>, discussing object lifecycles in C++ and Java;</li>
-<li><a href="/2015/05/21/wrapper-jni-guide-4">Part 4</a>, the final episode covering a few remaining points of interest.</li>
-</ul>
-<p>In my introductory post I outlined the steps I’d need to take in order to get a JNI wrapper working for a simple subset of a C++ library. Time to get started.</p>
-<h3><strong>1. Identify the C++ classes and methods</strong></h3>
-<p>The C++ library I’m wrapping is documented <a href="https://code.soundsoftware.ac.uk/embedded/vamp-plugin-sdk/namespaceVamp.html" target="_blank" rel="external">here</a>.</p>
-<p>I’ll initially need to wrap parts of two classes: PluginLoader, in the Vamp::HostExt namespace, and Plugin, in the Vamp namespace.</p>
-<p>PluginLoader is a singleton class which loads and returns an instance of a Vamp plugin on request, given the name (or “key”) of the plugin. It’s essentially an object factory.</p>
-<p>Then Plugin has both methods that return information about the specific plugin that has been loaded, and methods that are called with blocks of audio data in order to do the actual analysis.</p>
-<p>In my first draft, I want to make a singleton Java class to correspond to PluginLoader and implement in it the one method that actually loads the plugin; and I want to make a Plugin class with a couple of the methods that return simple metadata about the plugin.</p>
-<p>The methods that do real work involve some complicated return types, so I’ll leave those until later.</p>
-<p>So the basic library API I’m starting with looks like this, in the existing C++ API:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">class PluginLoader&#10;&#123;&#10;public:&#10;    static PluginLoader *getInstance();&#10;    Plugin *loadPlugin(PluginKey key,&#10;                       float inputSampleRate,&#10;                       int adapterFlags = 0);&#10;    // ... other methods for later&#10;&#125;;&#10;&#10;class PluginBase&#10;&#123;&#10;public:&#10;    virtual std::string getIdentifier() const = 0;&#10;    virtual std::string getName() const = 0;&#10;    virtual std::string getDescription() const = 0;&#10;    virtual int getPluginVersion() const = 0;&#10;    // ... other methods for later&#10;&#125;;</span><br></pre></td></tr></table></figure>
-<p>That’s plenty to be going on with.</p>
-<p>Note that the <code>PluginBase</code> with its pure virtual methods is somewhat like a C++ equivalent of a Java interface; the plugins themselves have a subclass type, namely Plugin.</p>
-<h3><strong>2. Design the Java classes</strong></h3>
-<p>There may be several ways to render a native library into Java classes, even where the native library API is already written as a set of C++ classes.</p>
-<p>In this case, <code>PluginBase</code> is similar to a Java interface, so I could turn it into one, or I could just put everything straight into the <code>Plugin</code> class in the Java version.</p>
-<p>I’ll start with the latter, because it’s simpler. At this stage my only goal is to get something built that I can run and test. I can refactor later.</p>
-<p>So, my first draft of <code>Plugin</code> is:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package org.vamp_plugins;&#10;&#10;public class Plugin&#10;&#123;&#10;    public native String getIdentifier();&#10;    public native String getName();&#10;    public native String getDescription();&#10;    public native int getPluginVersion();&#10;&#125;</span><br></pre></td></tr></table></figure>
-<p>The methods are all declared native and left unimplemented in the Java; they’ll be implemented in our C++ JNI wrapper later on.</p>
-<p>Meanwhile I want my <code>PluginLoader</code> to look a bit like this:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package org.vamp_plugins;&#10;&#10;public class PluginLoader&#10;&#123;&#10;    public class LoadFailedException&#10;        extends Exception &#123; &#125;;&#10;    public static synchronized PluginLoader getInstance() &#123;&#10;        // some magic here&#10;    &#125;&#10;    public Plugin loadPlugin(String key, float inputSampleRate)&#10;        throws LoadFailedException &#123;&#10;        // and here&#10;    &#125;&#10;&#125;</span><br></pre></td></tr></table></figure>
-<p>The C++ <code>PluginLoader</code> returns a null pointer if it can’t load a plugin. I want to throw an exception instead, and for this reason I haven’t marked loadPlugin as native—instead it will call a native method that returns a null or non-null value, throwing the exception if the returned value is null.</p>
-<p>I’ve made other simplifications too. I happen to know that the PluginKey type referred to in the C++ API is just a typedef for std::string, so I’ve translated it to a Java string type for the moment. I’ve omitted the options argument for now as well.</p>
-<h3>Native object handles</h3>
-<p>I have two Java classes, each instance of which should “manage” a C++ object of a corresponding class from the native library. Every time a method is called on a given Java instance, it should call through to the same instance of the underlying C++ class.</p>
-<p>To make this happen, we need to make the Java object remember which C++ object it is managing.</p>
-<p>For this purpose we’ll have both classes simply contain a “handle” field, which will hold a value that (on the native side of the fence) will be interpreted as a pointer to the C++ object on the heap, and (on the Java side) will be an opaque integer value.</p>
-<p>We just need to make sure the handle is stored in an integer type big enough for a pointer; the Java long type will do.</p>
-<p>Also, we need a way to construct Plugin objects. The PluginLoader will make plugins by calling its native-code implementation, getting back a C++ plugin pointer, and using that to construct our Java Plugin, so our plugin class needs a constructor that works from our opaque handle type.</p>
-<p>Adding these details and filling in our singleton implementation gives us:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public class PluginLoader&#10;&#123;&#10;    public class LoadFailedException&#10;        extends Exception &#123; &#125;;&#10;&#10;    public static synchronized PluginLoader getInstance() &#123;&#10;        if (inst == null) &#123;&#10;            inst = new PluginLoader();&#10;            inst.initialise();&#10;        &#125;&#10;        return inst;&#10;    &#125;&#10;&#10;    public Plugin loadPlugin(String key, float inputSampleRate)&#10;        throws LoadFailedException &#123;&#10;        long handle = loadPluginNative(key, inputSampleRate);&#10;        if (handle != 0) return new Plugin(handle);&#10;        else throw new LoadFailedException();&#10;    &#125;&#10;&#10;    private PluginLoader() &#123; initialise(); &#125;&#10;    private native long loadPluginNative(String key, float inputSampleRate);&#10;    private native void initialise();&#10;    private static PluginLoader inst;&#10;    private long nativeHandle;&#10;&#125;</span><br></pre></td></tr></table></figure>
-<p>and</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">public class Plugin&#10;&#123;&#10;    private long nativeHandle;&#10;    protected Plugin(long handle) &#123;&#10;        nativeHandle = handle;&#10;    &#125;&#10;&#10;    public native String getIdentifier();&#10;    public native String getName();&#10;    public native String getDescription();&#10;    public native int getPluginVersion();&#10;&#125;</span><br></pre></td></tr></table></figure>
-<p>The initialise method in <code>PluginLoader</code> is there to construct a native object and set up its <code>nativeHandle</code> field. <code>Plugin</code> doesn’t need a similar method, because its handle is given to it in the constructor.</p>
-<p><em>Hang on! How does the native object get deleted?</em>  — I give over a later post entirely to discussion of this question, so skip there if you’re interested now.</p>
-<h3><strong>3. Generate JNI function declarations</strong></h3>
-<p>For each of the native methods in our Java classes, we need an implementation in the JNI wrapper code. This will be a function in C or C++, with a name encoding the Java class and method name and an appropriate signature to receive the JNI mappings for the Java argument types, and with C linkage.</p>
-<p>It’s perfectly possible to write these from scratch, but the JDK includes a tool called javah that can help by producing the function prototypes. It requires compiled class files rather than Java files as input:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ javac org/vamp_plugins/*.java&#10;$ javah -jni org.vamp_plugins.Plugin org.vamp_plugins.PluginLoader&#10;$ ls -1&#10;org&#10;org_vamp_plugins_Plugin.h&#10;org_vamp_plugins_PluginLoader.h&#10;sample.h&#10;$</span><br></pre></td></tr></table></figure>
-<p>As you see, javah generates a header file for each Java class; they contain declarations like</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">JNIEXPORT jstring JNICALL&#10;Java_org_vamp_1plugins_Plugin_getIdentifier&#10; (JNIEnv *, jobject);</span><br></pre></td></tr></table></figure>
-<p>The <code>JNIEXPORT</code> and <code>JNICALL</code> macros simply ensure traditional C linkage regardless of the build platform.</p>
-<p>The method’s return type, <code>String</code> in the Java code, has been converted to the opaque JNI type <code>jstring</code>.</p>
-<p>The function name is an encoding of the package, class, and method name. These must appear exactly as generated by javah, as the JVM relies on them to find the implementation code.</p>
-<p>And the two arguments, which are common to all JNI implementation functions, provide the environment object which rolls up the JNI function namespace, and an opaque jobject referring to the this object on which the method was called.</p>
-<p>If we leave these headers untouched and simply include them in our implementation files, then we’ll be able to regenerate them when we extend our Java API without losing any of our work.</p>
-<blockquote>
-<p><em>Administrative note: If you haven’t already, this is a good moment to put the code directory under version control, so as to be able to mess around without fear of losing any working code.</em></p>
-<p><em>I like <a href="http://mercurial.selenic.com/" target="_blank" rel="external">Mercurial</a>, so I would either <code>hg init; hg add org/vamp_plugins/*.java</code> and <code>hg commit</code>, or else run up <a href="http://easyhg.org/" target="_blank" rel="external">EasyMercurial</a> and follow roughly <a href="http://vimeo.com/29779641" target="_blank" rel="external">the explanation in this video.</a></em></p>
-</blockquote>
-<h2><strong>Next</strong></h2>
-<p>In my <a href="/2015/05/20/wrapper-jni-guide-2">next article</a> I talk about writing the JNI wrapper implementations for these functions, and testing them from Java.</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-1/" data-id="ci9zcetqv000lj0ror50cd4e6" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-2/" data-id="cia7mpyks000lcsrorgouw18z" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
@@ -447,7 +389,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
   
   
     <nav id="page-nav">
-      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
     </nav>
   
 </section>
@@ -462,6 +404,10 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
     <h3 class="widget-title">Recents</h3>
     <div class="widget recents">
       <ul>
+        
+          <li>
+            <a href="/2015/05/27/git-cmds/">Git 命令</a>
+          </li>
         
           <li>
             <a href="/2015/05/21/wrapper-jni-guide-4/">Wrapper JNI Program Guide 4</a>
@@ -479,10 +425,6 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
             <a href="/2015/05/20/wrapper-jni-guide-2/">Wrapper JNI Program Guide 2</a>
           </li>
         
-          <li>
-            <a href="/2015/05/20/wrapper-jni-guide-1/">Wrapper JNI Program Guide 1</a>
-          </li>
-        
       </ul>
     </div>
   </div>
@@ -492,7 +434,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Hexo/" style="font-size: 15px;">Hexo</a> <a href="/tags/JNI/" style="font-size: 20px;">JNI</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/demo/" style="font-size: 10px;">demo</a> <a href="/tags/test/" style="font-size: 10px;">test</a>
+      <a href="/tags/Hexo/" style="font-size: 15px;">Hexo</a> <a href="/tags/JNI/" style="font-size: 20px;">JNI</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/demo/" style="font-size: 10px;">demo</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/test/" style="font-size: 10px;">test</a>
     </div>
   </div>
 
@@ -501,7 +443,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a><span class="archive-list-count">6</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
