@@ -56,6 +56,103 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-32bit-dll-from-64bit-code" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/28/32bit-dll-from-64bit-code/" class="article-date">
+  <time datetime="2015-05-28T03:30:22.000Z" itemprop="datePublished">2015-05-28</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/05/28/32bit-dll-from-64bit-code/">[FW]Accessing 32-bit DLLs from 64-bit code</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Forward: <a href="http://blog.mattmags.com/2007/06/30/accessing-32-bit-dlls-from-64-bit-code/" target="_blank" rel="external">Accessing 32-bit DLLs from 64-bit code</a></p>
+<p><strong>Migrating your 32-bit Windows application to a 64-bit machine can be problematic if you have 32-bit DLLs that you cannot re-write. Mike Becker shows you how you can access 32-bit DLLs from 64-bit code using built-in IPC mechanisms.</strong></p>
+<p><em><font size="-2">Originally published on DNJ Online, June 2007</font>.</em></p>
+<p>Microsoft’s 64-bit technology first appeared with Windows Server 2003 for Itanium 2 (also known as IA64 Architecture) and for eXtended technology CPUs (also known as x64 Architecture). It offers many advantages but also raises new issues for the software developer. For example, you may still need to access existing 32-bit DLLs from a 64-bit process.</p>
+<p>A key advantage of 64-bit technology is its ability to address up to 8Tb of memory, against a maximum of 2Gb for 32-bit processes. As a result, 64-bit technology allows most data processing to take place in memory, without any need for temporary disk storage. This can considerably increase performance and open up new data processing scenarios. There are therefore good arguments for migrating current 32-bit software products to a 64-bit platform.</p>
+<p>Many C or C++ applications are easy to migrated to a 64-bit platform, particularly if they are written in a monolithic fashion. Sometimes they just need to be rebuilt with an x64/IA64 compiler to run as native 64-bit applications. However distributed or module-based software can cause more problems.</p>
+<p><strong>The conflict: 64-bit versus 32-bit</strong></p>
+<p>A major migration issue concerns 32-bit software components which cannot be migrated, perhaps because the source code is lost or one of the dependencies cannot be migrated.</p>
+<p>Your 32-bit software is still supported on a 64-bit platform as 32-bit processes can be executed inside the dedicated Windows on Windows’ (WOW64) subsystem which is part of all 64-bit Windows operating systems. However a 64-bit process cannot load a 32-bit module into its process space, and a 32-bit processes cannot load a 64-bit module into its process space. The only way that communication can happen between 32-bit and 64-bit modules is through interprocess communication (IPC). In other words, 32-bit and 64-bit processes can exchange data using IPC techniques such as out-of-process COM, sockets, Windows messages or memory mapped files.</p>
+<p><img src="img/access3264_1.jpg" alt=""></p>
+<p><em>A 32-bit software product contains the main module WeatherReport which calls into the DLL WeatherStationControl. As long as both the main module and the DLL are 32-bit processes the product can run on both 32-bit and 64-bit platforms (inside WOW64). If both the main module and the DLL are migrated to the 64-bit platform, then they can both run in a native 64-bit process. However if only the main module is migrated to 64-bit, it will not be able to load the 32-bit DLL.</em></p>
+<p>The best way to migrate such a product to a 64-bit platform is to migrate both the main module and the dependency DLL, but if the dependency DLL cannot be migrated then it cannot be loaded into the 64-bit process and the application won’t work.</p>
+<p><strong>The solution: a surrogate process</strong></p>
+<p>This issue can be solved by loading the dependency DLL into a separate 32-bit process space. The main module, running as a 64-bit process, can then access the dependency DLL across the process boundary using IPC (<a href="http://msdn2.microsoft.com/en-us/library/aa365574.aspx" target="_blank" rel="external">see MSDN reference</a>).</p>
+<p><img src="img/access3264_4.jpg" alt=""></p>
+<p><em>A 64-bit process can access a 32-bit DLL across a process boundary if the 32-bit DLL is loaded into a separate 32-bit surrogate process space, and the application makes use of the built-in IPC mechanisms that support data exchange between 32-bit and 64-bit processes.</em></p>
+<p>This solution requires additional work as the 32-bit surrogate process that loads the 32-bit DLL and exposes its API must be created. Also, some changes will be necessary on the 64-bit side as the consumer must use one of the IPC techniques instead of directly accessing the 32-bit DLL. It is worth noting that, in extreme cases, this additional work could be comparable to the work involved in developing a 64-bit version of the 32-bit DLL from scratch.</p>
+<p>One possible way of reducing these costs is to implement a 64-bit wrapper’ DLL that exposes the same functions, parameters, types and so forth as the original 32-bit DLL. This wrapper DLL can then make IPC-based calls to the original 32-bit DLL, which has been loaded into a surrogate process.</p>
+<p><img src="img/access3264_5.jpg" alt=""></p>
+<p><em>A 64-bit wrapper DLL (WeatherStationControl64.DLL) exports the same interface as the original 32-bit DLL (WeatherStationControl.DLL), so providing the same services to the main process (WeatherReport) without you needing to make any changes to the code of either the main process or the 32-bit DLL. This wrapper DLL delegates calls to the 32-bit DLL, which is running in a surrogate process, using IPC.</em></p>
+<p>The main costs of this solution arise from implementing the surrogate process, loading the 32-bit DLL and implementing the 64-bit wrapper DLL. The actual cost depends on the IPC technique used to exchange data between the 64-bit and 32-bit processes.</p>
+<p><strong>COM as an IPC mechanism</strong></p>
+<p>One of most popular IPC techniques is DCOM (Distributed COM). Originally designed for distributed systems, DCOM is still supported on 64-bit Windows platforms, so both 32-bit and 64-bit COM modules can be built. The only limitation is that 64-bit and 32-bit modules cannot reside in the same process space, so they have to interoperate across process boundaries. This is done using out-of-process’ (OOP) COM components, in the following way:</p>
+<ol>
+<li>Create a 32-bit component implementing a COM object which loads and calls into the 32-bit DLL, and exposes the 32-bit DLL interface as a COM interface.</li>
+<li>Configure this COM components for OOP by either creating a standard COM+ OOP application (using dllhost as the surrogate process), or by implementing the COM component as a dedicated COM server process using, for example, an ATL COM server as hosting process or a Win32 service as a dedicated COM server.</li>
+<li>Create a 64-bit wrapper DLL which implements the same interface as the original 32-bit DLL, imports the COM interface of the COM object created above, translates current calls to the exposed interface into calls to the COM object interface, transfers the call parameters, receives return values and delegates them to the callers.</li>
+</ol>
+<p><img src="img/access3264_6.jpg" alt=""></p>
+<p><em>The 32-bit DLL (WeatherStationControl.DLL) is used by a COM object (WeatherStationWrapper) which exposes the interface of the 32-bit DLL as a COM interface. The 64-bit wrapper DLL (WeatherStationControl64.DLL) makes calls to this interface which are delegated to the original 32-bit DLL. The main process (WeatherReport) calls the interface exposed by the 64-bit wrapper DLL but is in fact served by the original 32-bit DLL.</em></p>
+<p>This solution should be significantly less expensive than creating a 64-bit version of the 32-bit DLL from scratch. Microsoft’s ATL technology is supported by Visual Studio with wizards and ready-written code fragments which should also help lower migration costs by saving time and reducing the likelihood of errors.</p>
+<p><strong>Implications</strong></p>
+<p>There are, however, a number of things that you still need to keep in mind:</p>
+<p><strong>1. Alignment</strong><br>
+The alignment of data in memory is different for 32-bit and 64-bit processes. This means that your more complicated custom data structures may be serialized by a 32-bit process in a way that is different to that expected by a 64-bit process, and vice versa. Microsoft Windows Platform
+SDK includes documentation about the differences in memory data alignment between 32-bit and 64-bit processes.</p>
+<p><strong>2. Data types</strong><br>
+In most instances, 64-bit Windows uses the same data types as the 32-bit version. The differences are mainly in pointers which are 32 bits long in 32-bit Windows and 64 bits long in 64-bit Windows. The pointer-derived data types such as HANDLE and HWND are also different between 32-bit and 64-bit versions. Windows helps you to keep a single code base for both 32-bit and 64-bit software versions by offering polymorphic data types that have a different length depending on the target platform, for example INT_PTR declares an integer with the size of a pointer’. Any variable of this type is an integer which is 32 bits long on a 32-bit platform and 64 bits long on a 64-bit platform.</p>
+<p><strong>3. COM initialize</strong><br>
+You can only access a COM object from a Windows application the object has been successfully initialized. The COM API function CoInitialize()must be called for each thread that is going to access a COM object before any COM interface calls are made, and the complementary call CoUninitialize() must be performed before the thread exits (<a href="http://msdn2.microsoft.com/en-us/library/ms678543.aspx" target="_blank" rel="external">see MSDN reference</a>). This rule must be strictly respected if the main process calls to the original 32-bit DLL are multi-threaded.</p>
+<p><strong>4. Security</strong><br>
+The OOP COM component instantiates COM objects in a separate process, whether a surrogate process, a COM server or Win32 service. This can mean that calls to the 32-bit DLL may happen in a different security context to the main process, especially if the main process makes intensive use of impersonation. If this is the case you may want to configure dedicated credentials for the OOP component, or implement internal impersonation in the COM object.</p>
+<p><strong>5. Performance</strong><br>
+The IPC-based solution is almost certain to be slower than making direct calls into the DLL. Data marshaling over process boundaries, automatic data conversion between 32 and 64 bits, WOW64 features and delays while instantiating the COM object will all impact performance. However there are numerous optimizing techniques that you can use such as COM pooling, caching inside the wrapper DLL, chunky’ versus chatty’ calls over process boundaries, implementing performance critical interfaces directly in the 64-bit DLL, and so forth.</p>
+<p><strong>6. Redirection</strong><br>
+The WOW64 subsystem is in charge of supporting 32-bit modules on 64-bit Windows. To avoid unwanted collisions between 32-bit and 64-bit software, particularly when accessing the file system and registry, WOW64 isolates 32-bit modules using a process called redirection’ (<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/win64/win64/running_32_bit_applications.asp" target="_blank" rel="external">see MSDN reference</a>). For example, for a 64-bit process the call to obtain the system folder pathname returns %WINDOWS%\System32, but for a 32-bit process it returns %WINDOWS%\SysWOW64. The program folder path for a 64-bit process is Program Files’, but for 32-bit process it is Program Files (x86)’. The registry key HKEY_LOCAL_MACHINE\Software contains 64-bit process settings and data, while the key HKEY_LOCAL_MACHINE\Software\WOW6432Node contains 32-bit process settings and data.</p>
+<p>This redirection is activated automatically when software modules call to popular pre-defined system paths or registry keys.</p>
+<p><strong>7. Kernel modules</strong><br>
+The solution proposed here is for 32-bit user level DLLs, and doesn’t work with 32-bit drivers. This is because 32-bit kernel modules cannot be used on a 64-bit platform, with no exceptions or workarounds. If your product includes any kernel level module, such as a device driver, then the only possible migration route is to re-write the kernel module as a 64-bit process.</p>
+<p><strong>8. Setup</strong><br>
+Using a COM OOP component in place of direct calls to a DLL requires changes to your setup procedure as the COM components must be installed and registered by the system. As discussed under ‘Security’ above, this may involve configuring dedicated credentials for the COM
+component.</p>
+<p><strong>References</strong></p>
+<ol>
+<li><a href="www.microsoft.com/whdc/system/platform/64bit/WoW64_bestprac.mspx">Best Practices for WOW64</a></li>
+<li><a href="http://msdn2.microsoft.com/en-us/library/aa365574.aspx" target="_blank" rel="external">MSDN on Interprocess Communications</a></li>
+<li><a href="http://msdn2.microsoft.com/en-us/library/ms952405.aspx" target="_blank" rel="external">Introduction to Developing Applications for the 64-bit Itanium-based Version of Windows</a></li>
+<li><a href="http://msdn2.microsoft.com/en-us/library/ms678543.aspx" target="_blank" rel="external">Understanding CoInitialize()</a></li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/28/32bit-dll-from-64bit-code/" data-id="ciajge8rf000aykro1nga7bmf" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/64bit/">64bit</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/COM/">COM</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-git-cmds" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2015/05/27/git-cmds/" class="article-date">
@@ -86,7 +183,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/27/git-cmds/" data-id="cia7mpyjt000acsrombw8npf0" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/27/git-cmds/" data-id="ciajge8rm000fykrosob90acj" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/git/">git</a></li></ul>
@@ -170,7 +267,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/21/wrapper-jni-guide-4/" data-id="cia7mpyk7000dcsros7z7tgmb" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/21/wrapper-jni-guide-4/" data-id="ciajge8rr000iykroxoyb173u" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
@@ -214,7 +311,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/20/markdown-using-tips/" data-id="cia7mpym0000ucsro88l5pifp" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/20/markdown-using-tips/" data-id="ciajge8sk000zykroccpa19gk" class="article-share-link">Share</a>
       
       
     </footer>
@@ -287,95 +384,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-3/" data-id="cia7mpykh000icsroi41tlayf" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-wrapper-jni-guide-2" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2015/05/20/wrapper-jni-guide-2/" class="article-date">
-  <time datetime="2015-05-20T05:59:59.000Z" itemprop="datePublished">2015-05-20</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/05/20/wrapper-jni-guide-2/">Wrapper JNI Program Guide 2</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>Originally From <a href="http://thebreakfastpost.com/2012/01/26/wrapping-a-c-library-with-jni-part-2/" target="_blank" rel="external">Wrapping a C++ library with JNI Part 2</a></p>
-<h2><strong>Wrapping a C++ library with JNI <br> - part 2</strong></h2>
-<h3>In this series…</h3>
-<ul>
-<li><a href="/2015/05/20/wrapper-jni-guide-0">Introduction</a>, outlining the general steps from starting with a C++ library to being able to build and run simple tests on some JNI wrappers;</li>
-<li><a href="/2015/05/20/wrapper-jni-guide-1">Part 1</a>, in which I design some simple Java classes and generate the stub wrapper code;</li>
-<li><a href="/2015/05/20/wrapper-jni-guide-2">Part 2</a>, in which I add just enough of the implementation to be able to do a test build;</li>
-<li><a href="/2015/05/20/wrapper-jni-guide-3">Part 3</a>, discussing object lifecycles in C++ and Java;</li>
-<li><a href="/2015/05/21/wrapper-jni-guide-4">Part 4</a>, the final episode covering a few remaining points of interest.</li>
-</ul>
-<p>By the end of <a href="/2015/05/20/wrapper-jni-guide-1">my previous post</a>, I had cooked up some simple Java classes corresponding to those parts of the C++ library API that I wanted to wrap up first.</p>
-<p>(That means as little of the API as is necessary to get a simple build and test going: I can add to it after that.)</p>
-<p>Now I need to fill in the JNI function implementations, code up a little test program, build it, and see what ensues.</p>
-<h3><strong>4. Write JNI function bodies</strong></h3>
-<p>This is the point at which we need to start referring quite seriously to the JNI specification and Programmer’s Guide.</p>
-<p>Our task is to write function bodies for the functions whose declarations have been generated by javah. The first thing we’ll need is a way to get and set the native handles we are storing in each Java class, so that we can keep track of the native object that each Java object corresponds to.</p>
-<p>This can go in a common header, <code>handle.h</code>:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#ifndef _HANDLE_H_INCLUDED_&#10;#define _HANDLE_H_INCLUDED_&#10;&#10;jfieldID getHandleField(JNIEnv *env, jobject obj)&#10;&#123;&#10;    jclass c = env-&#62;GetObjectClass(obj);&#10;    // J is the type signature for long:&#10;    return env-&#62;GetFieldID(c, &#34;nativeHandle&#34;, &#34;J&#34;);&#10;&#125;&#10;&#10;template &#60;typename T&#62;&#10;T *getHandle(JNIEnv *env, jobject obj)&#10;&#123;&#10;    jlong handle = env-&#62;GetLongField(obj, getHandleField(env, obj));&#10;    return reinterpret_cast&#60;T *&#62;(handle);&#10;&#125;&#10;&#10;template &#60;typename T&#62;&#10;void setHandle(JNIEnv *env, jobject obj, T *t)&#10;&#123;&#10;    jlong handle = reinterpret_cast&#60;jlong&#62;(t);&#10;    env-&#62;SetLongField(obj, getHandleField(env, obj), handle);&#10;&#125;&#10;&#10;#endif</span><br></pre></td></tr></table></figure>
-<p>For <code>PluginLoader.cpp</code>, we start with the appropriate headers and namespaces:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#include &#34;org_vamp_plugins_PluginLoader.h&#34;&#10;#include &#60;vamp-hostsdk/PluginLoader.h&#62;&#10;#include &#34;handle.h&#34;&#10;&#10;using Vamp::Plugin;&#10;using Vamp::HostExt::PluginLoader;</span><br></pre></td></tr></table></figure>
-<p>Now we need two function implementations. We have the declarations for these already: they were generated by <code>javah</code> in the previous post.</p>
-<p>One, the <code>initialise</code> function called from the Java class constructor, simply creates a native object and stows it in the Java object.</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">void&#10;Java_org_vamp_1plugins_PluginLoader_initialise(JNIEnv *env, jobject obj)&#10;&#123;&#10;    PluginLoader *inst = PluginLoader::getInstance();&#10;    setHandle(env, obj, inst);&#10;&#125;</span><br></pre></td></tr></table></figure>
-<p>The other does the real work. Here we grab the previously stowed native object from the handle in the Java object, convert the plugin key argument from its opaque <code>jstring</code> type to a C string, call out to the native <code>loadPlugin</code>, and return the result.</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">jlong &#10;Java_org_vamp_1plugins_PluginLoader_loadPluginNative(JNIEnv *env, jobject obj,&#10;                             jstring key, jfloat rate)&#10;&#123;&#10;    PluginLoader *inst = getHandle&#60;PluginLoader&#62;(env, obj);&#10;    const char *kstr = env-&#62;GetStringUTFChars(key, 0);&#10;    Plugin *p = inst-&#62;loadPlugin(kstr, rate);&#10;    env-&#62;ReleaseStringUTFChars(key, kstr);&#10;    return (jlong)p;&#10;&#125;</span><br></pre></td></tr></table></figure>
-<p>In contrast, <code>Plugin.cpp</code> is largely a cut-and-paste job:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">#include &#34;org_vamp_plugins_Plugin.h&#34;&#10;#include &#60;vamp-hostsdk/Plugin.h&#62;&#10;#include &#34;handle.h&#34;&#10;&#10;using Vamp::Plugin;&#10;using std::string;&#10;&#10;jstring&#10;Java_org_vamp_1plugins_Plugin_getIdentifier(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle&#60;Plugin&#62;(env, obj);&#10;    return env-&#62;NewStringUTF(p-&#62;getIdentifier().c_str());&#10;&#125;&#10;&#10;jstring&#10;Java_org_vamp_1plugins_Plugin_getName(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle&#60;Plugin&#62;(env, obj);&#10;    return env-&#62;NewStringUTF(p-&#62;getName().c_str());&#10;&#125;&#10;&#10;jstring&#10;Java_org_vamp_1plugins_Plugin_getDescription(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle&#60;Plugin&#62;(env, obj);&#10;    return env-&#62;NewStringUTF(p-&#62;getDescription().c_str());&#10;&#125;&#10;&#10;jint&#10;Java_org_vamp_1plugins_Plugin_getPluginVersion(JNIEnv *env, jobject obj)&#10;&#123;&#10;    Plugin *p = getHandle&#60;Plugin&#62;(env, obj);&#10;    return p-&#62;getPluginVersion();&#10;&#125;</span><br></pre></td></tr></table></figure>
-<h3><strong>5. Make a test program</strong>*</h3>
-<p>This should be a Java program that refers only to the Java classes I’ve put together. It just needs to load a plugin using the <code>PluginLoader</code> class, and call some test methods on the resulting plugin.</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package org.vamp_plugins;&#10;&#10;public class test&#10;&#123;&#10;    public static void main(String[] args) &#123;&#10;&#10;        // This is the name of a Vamp plugin we know we have installed&#10;        String key = &#34;vamp-example-plugins:percussiononsets&#34;;&#10;&#10;        PluginLoader loader = PluginLoader.getInstance();&#10;&#10;        try &#123;&#10;            Plugin p = loader.loadPlugin(key, 44100);&#10;            System.out.println(&#34;identifier: &#34; + p.getIdentifier());&#10;            System.out.println(&#34;name: &#34; + p.getName());&#10;            System.out.println(&#34;description: &#34; + p.getDescription());&#10;            System.out.println(&#34;version: &#34; + p.getPluginVersion());&#10;        &#125; catch (PluginLoader.LoadFailedException e) &#123;&#10;            System.out.println(&#34;Plugin load failed&#34;);&#10;        &#125;&#10;    &#125;&#10;&#125;</span><br></pre></td></tr></table></figure>
-<p>That should be enough.</p>
-<h3><strong>6. Build and test</strong></h3>
-<p>So, we need to compile and link our C++ wrapper implementations into a dynamic library (DLL, or shared object); and we need to build our Java test program.</p>
-<p>How you would do this depends on the platform and development environment you’re using. For the purposes of this post, I’m using Linux and command-line tools.</p>
-<p>So, for the C++ parts I’ll create a small <code>Makefile</code>:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">LIBRARY := libvamp-jni.so&#10;OBJFILES := src/PluginLoader.o src/Plugin.o&#10;INCLUDES := -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux&#10;CXXFLAGS := $(INCLUDES)&#10;&#10;$(LIBRARY): $(OBJFILES)&#10;    $(CXX) -shared -o $@ $^ -lvamp-hostsdk</span><br></pre></td></tr></table></figure>
-<p>Thus:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ make&#10;g++ -I/usr/lib/jvm/java-6-openjdk/include -I/usr/lib/jvm/java-6-openjdk/include/linux   -c -o src/PluginLoader.o src/PluginLoader.cpp&#10;g++ -I/usr/lib/jvm/java-6-openjdk/include -I/usr/lib/jvm/java-6-openjdk/include/linux   -c -o src/Plugin.o src/Plugin.cpp&#10;g++ -shared -o libvamp-jni.so src/PluginLoader.o src/Plugin.o -lvamp-hostsdk&#10;$</span><br></pre></td></tr></table></figure>
-<p>Now build the Java classes and test program, and run it:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ javac org/vamp_plugins/*.java&#10;$ java -classpath . org.vamp_plugins.test&#10;Exception in thread &#34;main&#34; java.lang.UnsatisfiedLinkError: org.vamp_plugins.PluginLoader.initialise()V&#10;    at org.vamp_plugins.PluginLoader.initialise(Native Method)&#10;    at org.vamp_plugins.PluginLoader.&#60;init&#62;(PluginLoader.java:23)&#10;    at org.vamp_plugins.PluginLoader.getInstance(PluginLoader.java:10)&#10;    at org.vamp_plugins.test.main(test.java:11)&#10;$</span><br></pre></td></tr></table></figure>
-<p>Uh-oh. I forgot to load the JNI wrapper DLL. To make this happen, I need to add a static section to the end of the <code>PluginLoader</code> class:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">static &#123;&#10;        System.loadLibrary(&#34;vamp-jni&#34;);&#10;    &#125;</span><br></pre></td></tr></table></figure>
-<p>The JVM class loader is quite sensitive to the exact name and location of the library file.</p>
-<p>If I supply the name <code>vamp-jni</code> to loadLibrary as above, then on my Linux machine the JVM will expect the library to be called <a href="http://libvamp-jni.so" target="_blank" rel="external">libvamp-jni.so</a> (and not, say, <a href="http://vamp-jni.so" target="_blank" rel="external">vamp-jni.so</a>).</p>
-<p>Other rules apply on other platforms.</p>
-<p>Rebuilding and trying again:</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">$ javac org/vamp_plugins/*.java&#10;$ java -classpath . org.vamp_plugins.test&#10;identifier: percussiononsets&#10;name: Simple Percussion Onset Detector&#10;description: Detect percussive note onsets by identifying broadband energy rises&#10;version: 2&#10;$</span><br></pre></td></tr></table></figure>
-<p>Hurrah!</p>
-<h3><strong>Next</strong></h3>
-<p>In my <a href="/2015/05/20/wrapper-jni-guide-3">next post</a> on this subject, I talk about managing the disposal of our underlying C++ objects to avoid memory leaks.</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-2/" data-id="cia7mpyks000lcsrorgouw18z" class="article-share-link">Share</a>
+      <a data-url="http://uuangian.github.io/2015/05/20/wrapper-jni-guide-3/" data-id="ciajge8rw000nykro0n90qyk7" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JNI/">JNI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
@@ -406,6 +415,10 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
       <ul>
         
           <li>
+            <a href="/2015/05/28/32bit-dll-from-64bit-code/">[FW]Accessing 32-bit DLLs from 64-bit code</a>
+          </li>
+        
+          <li>
             <a href="/2015/05/27/git-cmds/">Git 命令</a>
           </li>
         
@@ -421,10 +434,6 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
             <a href="/2015/05/20/wrapper-jni-guide-3/">Wrapper JNI Program Guide 3</a>
           </li>
         
-          <li>
-            <a href="/2015/05/20/wrapper-jni-guide-2/">Wrapper JNI Program Guide 2</a>
-          </li>
-        
       </ul>
     </div>
   </div>
@@ -434,7 +443,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Hexo/" style="font-size: 15px;">Hexo</a> <a href="/tags/JNI/" style="font-size: 20px;">JNI</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/demo/" style="font-size: 10px;">demo</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/test/" style="font-size: 10px;">test</a>
+      <a href="/tags/64bit/" style="font-size: 10px;">64bit</a> <a href="/tags/COM/" style="font-size: 10px;">COM</a> <a href="/tags/Hexo/" style="font-size: 15px;">Hexo</a> <a href="/tags/JNI/" style="font-size: 20px;">JNI</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/demo/" style="font-size: 10px;">demo</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/test/" style="font-size: 10px;">test</a>
     </div>
   </div>
 
@@ -443,7 +452,7 @@ So, to construct the <code>TreeMap&lt;Integer, ArrayList&lt;Feature&gt;&gt;</cod
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a><span class="archive-list-count">7</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 

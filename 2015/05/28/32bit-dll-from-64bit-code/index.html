@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>[FW]Accessing 32-bit DLLs from 64-bit code | UUangian&#39;s</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <link rel="alternative" href="/atom.xml" title="UUangian&#39;s" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico">
+  
+
+  <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <div id="header">
+  <div id="header-outer" class="outer">
+    <div id="header-inner" class="inner">
+      <div id="header-title">
+        <h1 id="logo-wrap">
+          <a href="/" id="logo">UUangian&#39;s
+          
+          </a>
+        </h1>
+      </div>
+      <nav id="sub-nav">
+        
+		<a id="nav-twitter-link" class="nav-icon" href="http://twitter.com/youior" target="_blank" title="twitter"></a>
+        
+        
+		<a id="nav-instagram-link" class="nav-icon" href="http://instagram.com/youior" target="_blank" title="instagram"></a>
+        
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://uuangian.github.io"></form>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="outer">
+        <section id="main"><article id="post-32bit-dll-from-64bit-code" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/05/28/32bit-dll-from-64bit-code/" class="article-date">
+  <time datetime="2015-05-28T03:30:22.000Z" itemprop="datePublished">2015-05-28</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      [FW]Accessing 32-bit DLLs from 64-bit code
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Forward: <a href="http://blog.mattmags.com/2007/06/30/accessing-32-bit-dlls-from-64-bit-code/" target="_blank" rel="external">Accessing 32-bit DLLs from 64-bit code</a></p>
+<p><strong>Migrating your 32-bit Windows application to a 64-bit machine can be problematic if you have 32-bit DLLs that you cannot re-write. Mike Becker shows you how you can access 32-bit DLLs from 64-bit code using built-in IPC mechanisms.</strong></p>
+<p><em><font size="-2">Originally published on DNJ Online, June 2007</font>.</em></p>
+<p>Microsoft’s 64-bit technology first appeared with Windows Server 2003 for Itanium 2 (also known as IA64 Architecture) and for eXtended technology CPUs (also known as x64 Architecture). It offers many advantages but also raises new issues for the software developer. For example, you may still need to access existing 32-bit DLLs from a 64-bit process.</p>
+<p>A key advantage of 64-bit technology is its ability to address up to 8Tb of memory, against a maximum of 2Gb for 32-bit processes. As a result, 64-bit technology allows most data processing to take place in memory, without any need for temporary disk storage. This can considerably increase performance and open up new data processing scenarios. There are therefore good arguments for migrating current 32-bit software products to a 64-bit platform.</p>
+<p>Many C or C++ applications are easy to migrated to a 64-bit platform, particularly if they are written in a monolithic fashion. Sometimes they just need to be rebuilt with an x64/IA64 compiler to run as native 64-bit applications. However distributed or module-based software can cause more problems.</p>
+<p><strong>The conflict: 64-bit versus 32-bit</strong></p>
+<p>A major migration issue concerns 32-bit software components which cannot be migrated, perhaps because the source code is lost or one of the dependencies cannot be migrated.</p>
+<p>Your 32-bit software is still supported on a 64-bit platform as 32-bit processes can be executed inside the dedicated Windows on Windows’ (WOW64) subsystem which is part of all 64-bit Windows operating systems. However a 64-bit process cannot load a 32-bit module into its process space, and a 32-bit processes cannot load a 64-bit module into its process space. The only way that communication can happen between 32-bit and 64-bit modules is through interprocess communication (IPC). In other words, 32-bit and 64-bit processes can exchange data using IPC techniques such as out-of-process COM, sockets, Windows messages or memory mapped files.</p>
+<p><img src="img/access3264_1.jpg" alt=""></p>
+<p><em>A 32-bit software product contains the main module WeatherReport which calls into the DLL WeatherStationControl. As long as both the main module and the DLL are 32-bit processes the product can run on both 32-bit and 64-bit platforms (inside WOW64). If both the main module and the DLL are migrated to the 64-bit platform, then they can both run in a native 64-bit process. However if only the main module is migrated to 64-bit, it will not be able to load the 32-bit DLL.</em></p>
+<p>The best way to migrate such a product to a 64-bit platform is to migrate both the main module and the dependency DLL, but if the dependency DLL cannot be migrated then it cannot be loaded into the 64-bit process and the application won’t work.</p>
+<p><strong>The solution: a surrogate process</strong></p>
+<p>This issue can be solved by loading the dependency DLL into a separate 32-bit process space. The main module, running as a 64-bit process, can then access the dependency DLL across the process boundary using IPC (<a href="http://msdn2.microsoft.com/en-us/library/aa365574.aspx" target="_blank" rel="external">see MSDN reference</a>).</p>
+<p><img src="img/access3264_4.jpg" alt=""></p>
+<p><em>A 64-bit process can access a 32-bit DLL across a process boundary if the 32-bit DLL is loaded into a separate 32-bit surrogate process space, and the application makes use of the built-in IPC mechanisms that support data exchange between 32-bit and 64-bit processes.</em></p>
+<p>This solution requires additional work as the 32-bit surrogate process that loads the 32-bit DLL and exposes its API must be created. Also, some changes will be necessary on the 64-bit side as the consumer must use one of the IPC techniques instead of directly accessing the 32-bit DLL. It is worth noting that, in extreme cases, this additional work could be comparable to the work involved in developing a 64-bit version of the 32-bit DLL from scratch.</p>
+<p>One possible way of reducing these costs is to implement a 64-bit wrapper’ DLL that exposes the same functions, parameters, types and so forth as the original 32-bit DLL. This wrapper DLL can then make IPC-based calls to the original 32-bit DLL, which has been loaded into a surrogate process.</p>
+<p><img src="img/access3264_5.jpg" alt=""></p>
+<p><em>A 64-bit wrapper DLL (WeatherStationControl64.DLL) exports the same interface as the original 32-bit DLL (WeatherStationControl.DLL), so providing the same services to the main process (WeatherReport) without you needing to make any changes to the code of either the main process or the 32-bit DLL. This wrapper DLL delegates calls to the 32-bit DLL, which is running in a surrogate process, using IPC.</em></p>
+<p>The main costs of this solution arise from implementing the surrogate process, loading the 32-bit DLL and implementing the 64-bit wrapper DLL. The actual cost depends on the IPC technique used to exchange data between the 64-bit and 32-bit processes.</p>
+<p><strong>COM as an IPC mechanism</strong></p>
+<p>One of most popular IPC techniques is DCOM (Distributed COM). Originally designed for distributed systems, DCOM is still supported on 64-bit Windows platforms, so both 32-bit and 64-bit COM modules can be built. The only limitation is that 64-bit and 32-bit modules cannot reside in the same process space, so they have to interoperate across process boundaries. This is done using out-of-process’ (OOP) COM components, in the following way:</p>
+<ol>
+<li>Create a 32-bit component implementing a COM object which loads and calls into the 32-bit DLL, and exposes the 32-bit DLL interface as a COM interface.</li>
+<li>Configure this COM components for OOP by either creating a standard COM+ OOP application (using dllhost as the surrogate process), or by implementing the COM component as a dedicated COM server process using, for example, an ATL COM server as hosting process or a Win32 service as a dedicated COM server.</li>
+<li>Create a 64-bit wrapper DLL which implements the same interface as the original 32-bit DLL, imports the COM interface of the COM object created above, translates current calls to the exposed interface into calls to the COM object interface, transfers the call parameters, receives return values and delegates them to the callers.</li>
+</ol>
+<p><img src="img/access3264_6.jpg" alt=""></p>
+<p><em>The 32-bit DLL (WeatherStationControl.DLL) is used by a COM object (WeatherStationWrapper) which exposes the interface of the 32-bit DLL as a COM interface. The 64-bit wrapper DLL (WeatherStationControl64.DLL) makes calls to this interface which are delegated to the original 32-bit DLL. The main process (WeatherReport) calls the interface exposed by the 64-bit wrapper DLL but is in fact served by the original 32-bit DLL.</em></p>
+<p>This solution should be significantly less expensive than creating a 64-bit version of the 32-bit DLL from scratch. Microsoft’s ATL technology is supported by Visual Studio with wizards and ready-written code fragments which should also help lower migration costs by saving time and reducing the likelihood of errors.</p>
+<p><strong>Implications</strong></p>
+<p>There are, however, a number of things that you still need to keep in mind:</p>
+<p><strong>1. Alignment</strong><br>
+The alignment of data in memory is different for 32-bit and 64-bit processes. This means that your more complicated custom data structures may be serialized by a 32-bit process in a way that is different to that expected by a 64-bit process, and vice versa. Microsoft Windows Platform
+SDK includes documentation about the differences in memory data alignment between 32-bit and 64-bit processes.</p>
+<p><strong>2. Data types</strong><br>
+In most instances, 64-bit Windows uses the same data types as the 32-bit version. The differences are mainly in pointers which are 32 bits long in 32-bit Windows and 64 bits long in 64-bit Windows. The pointer-derived data types such as HANDLE and HWND are also different between 32-bit and 64-bit versions. Windows helps you to keep a single code base for both 32-bit and 64-bit software versions by offering polymorphic data types that have a different length depending on the target platform, for example INT_PTR declares an integer with the size of a pointer’. Any variable of this type is an integer which is 32 bits long on a 32-bit platform and 64 bits long on a 64-bit platform.</p>
+<p><strong>3. COM initialize</strong><br>
+You can only access a COM object from a Windows application the object has been successfully initialized. The COM API function CoInitialize()must be called for each thread that is going to access a COM object before any COM interface calls are made, and the complementary call CoUninitialize() must be performed before the thread exits (<a href="http://msdn2.microsoft.com/en-us/library/ms678543.aspx" target="_blank" rel="external">see MSDN reference</a>). This rule must be strictly respected if the main process calls to the original 32-bit DLL are multi-threaded.</p>
+<p><strong>4. Security</strong><br>
+The OOP COM component instantiates COM objects in a separate process, whether a surrogate process, a COM server or Win32 service. This can mean that calls to the 32-bit DLL may happen in a different security context to the main process, especially if the main process makes intensive use of impersonation. If this is the case you may want to configure dedicated credentials for the OOP component, or implement internal impersonation in the COM object.</p>
+<p><strong>5. Performance</strong><br>
+The IPC-based solution is almost certain to be slower than making direct calls into the DLL. Data marshaling over process boundaries, automatic data conversion between 32 and 64 bits, WOW64 features and delays while instantiating the COM object will all impact performance. However there are numerous optimizing techniques that you can use such as COM pooling, caching inside the wrapper DLL, chunky’ versus chatty’ calls over process boundaries, implementing performance critical interfaces directly in the 64-bit DLL, and so forth.</p>
+<p><strong>6. Redirection</strong><br>
+The WOW64 subsystem is in charge of supporting 32-bit modules on 64-bit Windows. To avoid unwanted collisions between 32-bit and 64-bit software, particularly when accessing the file system and registry, WOW64 isolates 32-bit modules using a process called redirection’ (<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/win64/win64/running_32_bit_applications.asp" target="_blank" rel="external">see MSDN reference</a>). For example, for a 64-bit process the call to obtain the system folder pathname returns %WINDOWS%\System32, but for a 32-bit process it returns %WINDOWS%\SysWOW64. The program folder path for a 64-bit process is Program Files’, but for 32-bit process it is Program Files (x86)’. The registry key HKEY_LOCAL_MACHINE\Software contains 64-bit process settings and data, while the key HKEY_LOCAL_MACHINE\Software\WOW6432Node contains 32-bit process settings and data.</p>
+<p>This redirection is activated automatically when software modules call to popular pre-defined system paths or registry keys.</p>
+<p><strong>7. Kernel modules</strong><br>
+The solution proposed here is for 32-bit user level DLLs, and doesn’t work with 32-bit drivers. This is because 32-bit kernel modules cannot be used on a 64-bit platform, with no exceptions or workarounds. If your product includes any kernel level module, such as a device driver, then the only possible migration route is to re-write the kernel module as a 64-bit process.</p>
+<p><strong>8. Setup</strong><br>
+Using a COM OOP component in place of direct calls to a DLL requires changes to your setup procedure as the COM components must be installed and registered by the system. As discussed under ‘Security’ above, this may involve configuring dedicated credentials for the COM
+component.</p>
+<p><strong>References</strong></p>
+<ol>
+<li><a href="www.microsoft.com/whdc/system/platform/64bit/WoW64_bestprac.mspx">Best Practices for WOW64</a></li>
+<li><a href="http://msdn2.microsoft.com/en-us/library/aa365574.aspx" target="_blank" rel="external">MSDN on Interprocess Communications</a></li>
+<li><a href="http://msdn2.microsoft.com/en-us/library/ms952405.aspx" target="_blank" rel="external">Introduction to Developing Applications for the 64-bit Itanium-based Version of Windows</a></li>
+<li><a href="http://msdn2.microsoft.com/en-us/library/ms678543.aspx" target="_blank" rel="external">Understanding CoInitialize()</a></li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://uuangian.github.io/2015/05/28/32bit-dll-from-64bit-code/" data-id="ciajge8rf000aykro1nga7bmf" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/64bit/">64bit</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/COM/">COM</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2015/05/27/git-cmds/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Git 命令</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          
+            <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget recents">
+      <ul>
+        
+          <li>
+            <a href="/2015/05/28/32bit-dll-from-64bit-code/">[FW]Accessing 32-bit DLLs from 64-bit code</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/27/git-cmds/">Git 命令</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/21/wrapper-jni-guide-4/">Wrapper JNI Program Guide 4</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/markdown-using-tips/">Markdown 使用技巧</a>
+          </li>
+        
+          <li>
+            <a href="/2015/05/20/wrapper-jni-guide-3/">Wrapper JNI Program Guide 3</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/64bit/" style="font-size: 10px;">64bit</a> <a href="/tags/COM/" style="font-size: 10px;">COM</a> <a href="/tags/Hexo/" style="font-size: 15px;">Hexo</a> <a href="/tags/JNI/" style="font-size: 20px;">JNI</a> <a href="/tags/Java/" style="font-size: 20px;">Java</a> <a href="/tags/demo/" style="font-size: 10px;">demo</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/test/" style="font-size: 10px;">test</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a><span class="archive-list-count">8</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04/">April 2014</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+          
+        
+      </div>
+      <div id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a></br>
+      &copy; 2015 uuangian<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> Theme based on <a href="http://xingwu.me/archives/" target="_blank">Codeland</a>
+    </div>
+  </div>
+</div>
+    </div>
+    <nav id="mobile-nav">
+  
+</nav>
+    
+
+<script src="http://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+  </div>
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</body>
+</html>
